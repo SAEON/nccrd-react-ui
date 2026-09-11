@@ -1,5 +1,12 @@
 FROM node:20 AS build
 
+# Vite bakes VITE_* vars into the JS bundle at build time, not runtime — the
+# browser (on someone's laptop) needs this to be the API's real, externally
+# reachable address, never 'localhost' (that would mean the viewer's own
+# machine, not the server).
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
