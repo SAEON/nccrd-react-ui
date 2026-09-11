@@ -649,7 +649,7 @@ const Home = () => {
                         National Climate Change Response Database
                     </h1>
                     <p style={{ fontSize: '1.1rem', color: 'var(--accent-secondary)', fontWeight: 500, maxWidth: '600px', margin: '0 auto' }}>
-                        Tracking South Africa’s climate change adaptation and mitigation projects!.
+                        Tracking South Africa’s climate change adaptation and mitigation projects.
                     </p>
                 </div>
             </section>
