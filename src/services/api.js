@@ -7,11 +7,28 @@
  * (useful for 422 validation-error objects).
  */
 
+import { getToken, clearToken } from './authStorage';
+
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:2022';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Authorization header for the current session, or {} if not logged in.
+ * On a 401 the token is stale — clear it so the next getCurrentUser() call
+ * correctly resolves to "logged out" instead of retrying forever.
+ */
+function _authHeaders() {
+    const token = getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function _throwOnErrorWithAuthCheck(res) {
+    if (res.status === 401) clearToken();
+    await _throwOnError(res);
+}
 
 /**
  * Parse a non-OK response and throw a descriptive Error.
@@ -91,10 +108,10 @@ export const getSubmissionById = async (id) => {
 export const createSubmission = async (data) => {
     const res = await fetch(`${API_BASE_URL}/submission/new_submission`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ..._authHeaders() },
         body: JSON.stringify(data),
     });
-    if (!res.ok) await _throwOnError(res);
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -109,11 +126,11 @@ export const updateSubmission = async (id, data) => {
         `${API_BASE_URL}/submission/update_new_submission/${id}`,
         {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ..._authHeaders() },
             body: JSON.stringify(data),
         }
     );
-    if (!res.ok) await _throwOnError(res);
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -125,8 +142,9 @@ export const updateSubmission = async (id, data) => {
 export const deleteSubmission = async (id) => {
     const res = await fetch(`${API_BASE_URL}/submission/delete/${id}`, {
         method: 'DELETE',
+        headers: { ..._authHeaders() },
     });
-    if (!res.ok) await _throwOnError(res);
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -170,6 +188,37 @@ export const getVocabulary = async (treeName) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Exchange email + password for a JWT access token. Backed by POST /auth/login.
+ * Returns { access_token, token_type, expires_in, must_change_password }.
+ */
+export const login = async (email, password) => {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
+/**
+ * Change the current user's password. Backed by POST /auth/change-password.
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+    const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ..._authHeaders() },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RBAC
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -178,8 +227,58 @@ export const getVocabulary = async (treeName) => {
  * on that tenant. Backed by GET /rbac/me.
  */
 export const getCurrentUser = async () => {
-    const res = await fetch(`${API_BASE_URL}/rbac/me`);
-    if (!res.ok) await _throwOnError(res);
+    const res = await fetch(`${API_BASE_URL}/rbac/me`, {
+        headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/**
+ * Provision a new user with a one-time temporary password, optionally
+ * granting them a role on a tenant in the same call. Requires the
+ * `assign-role` permission. Backed by POST /rbac/users.
+ * Returns { user, temp_password, role_assignment } — the password is shown
+ * once and not retrievable afterwards.
+ *
+ * @param {string} name
+ * @param {string} email
+ * @param {{roleId?: number, tenantId?: number}} [roleGrant] - pass both or neither.
+ */
+export const createUser = async (name, email, roleGrant = {}) => {
+    const body = { name, email };
+    if (roleGrant.roleId != null && roleGrant.tenantId != null) {
+        body.role_id = roleGrant.roleId;
+        body.tenant_id = roleGrant.tenantId;
+    }
+    const res = await fetch(`${API_BASE_URL}/rbac/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ..._authHeaders() },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/**
+ * List roles. Requires `view-roles`. Backed by GET /rbac/roles.
+ */
+export const getRoles = async () => {
+    const res = await fetch(`${API_BASE_URL}/rbac/roles`, {
+        headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/**
+ * List tenants. Requires `view-tenants`. Backed by GET /rbac/tenants.
+ */
+export const getTenants = async () => {
+    const res = await fetch(`${API_BASE_URL}/rbac/tenants`, {
+        headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -209,9 +308,9 @@ export const uploadBulkSubmissions = async (file) => {
 
     const res = await fetch(
         `${API_BASE_URL}/submission/create_submission_upload-xlsx/`,
-        { method: 'POST', body: formData }
+        { method: 'POST', headers: { ..._authHeaders() }, body: formData }
     );
-    if (!res.ok) await _throwOnError(res);
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -236,8 +335,8 @@ export const uploadProgressReport = async (submissionId, file, notes) => {
 
     const res = await fetch(
         `${API_BASE_URL}/submission/${submissionId}/progress_reports`,
-        { method: 'POST', body: formData }
+        { method: 'POST', headers: { ..._authHeaders() }, body: formData }
     );
-    if (!res.ok) await _throwOnError(res);
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };

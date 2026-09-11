@@ -1,10 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, PlusCircle, Download, UserCircle, Activity, FileText } from 'lucide-react';
+import { Search, PlusCircle, Download, UserCircle, UserPlus, Activity, FileText } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 
 const Navbar = () => {
     const navigate = useNavigate();
-    const { user, tenant, hasPermission } = useCurrentUser();
+    const { user, hasPermission, isAuthenticated, logout } = useCurrentUser();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
 
     /**
      * If the project-directory section exists in the DOM we're already on the
@@ -35,7 +40,6 @@ const Navbar = () => {
                             Department: <span>Forestry, Fisheries and the Environment</span> REPUBLIC OF SOUTH AFRICA
                         </div>
                     </div>
-                    <div className="nccrd-brand">{tenant?.title || ''}</div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
@@ -48,6 +52,11 @@ const Navbar = () => {
                                 <Activity size={14} /> NEW SUBMISSION
                             </Link>
                         )}
+                        {hasPermission('assign-role') && (
+                            <Link to="/admin/users/new" className="nav-link">
+                                <UserPlus size={14} /> ADD USER
+                            </Link>
+                        )}
                         <a href="#" className="nav-link">
                             <FileText size={14} /> DOWNLOAD TEMPLATE
                         </a>
@@ -55,24 +64,23 @@ const Navbar = () => {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-light)', paddingLeft: '1.5rem' }}>
                         <img src="/flag.svg" alt="South African Flag" style={{ height: '24px', borderRadius: '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
-                        {user ? (
-                            <span
-                                title="Auth bypass is active — all actions are attributed to this account until real login is wired up."
-                                style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
-                            >
-                                Signed in as <strong>{user.name}</strong> (dev)
-                            </span>
-                        ) : (
-                            <span title="Coming Soon — authentication is not yet available" style={{ cursor: 'not-allowed' }}>
+                        {isAuthenticated ? (
+                            <>
+                                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                    Signed in as <strong>{user.name}</strong>
+                                </span>
                                 <button
                                     className="btn btn-outline"
-                                    disabled
-                                    aria-disabled="true"
-                                    style={{ fontSize: '0.75rem', gap: '0.4rem', opacity: 0.6, cursor: 'not-allowed', pointerEvents: 'none' }}
+                                    onClick={handleLogout}
+                                    style={{ fontSize: '0.75rem', gap: '0.4rem' }}
                                 >
-                                    LOG IN / SIGN UP
+                                    LOG OUT
                                 </button>
-                            </span>
+                            </>
+                        ) : (
+                            <Link to="/login" className="btn btn-outline" style={{ fontSize: '0.75rem', gap: '0.4rem' }}>
+                                LOG IN
+                            </Link>
                         )}
                     </div>
                 </div>
