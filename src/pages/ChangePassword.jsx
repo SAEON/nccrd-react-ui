@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { changePassword } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 
@@ -9,7 +9,7 @@ import { useCurrentUser } from '../context/CurrentUserContext';
  * password, or any user resetting their password on request).
  */
 const ChangePassword = () => {
-    const { isAuthenticated } = useCurrentUser();
+    const { isAuthenticated, loading } = useCurrentUser();
     const navigate = useNavigate();
     const location = useLocation();
     const [currentPassword, setCurrentPassword] = useState('');
@@ -20,9 +20,16 @@ const ChangePassword = () => {
 
     const from = location.state?.from || '/';
 
+    // Must check loading first — CurrentUserContext starts with
+    // isAuthenticated: false until GET /rbac/me resolves, so checking
+    // isAuthenticated alone would bounce a genuinely logged-in user (landing
+    // here right after a forced-password-change login) to /login during that
+    // brief window. Mirrors RequireAuth.jsx's correct pattern, including the
+    // declarative <Navigate/> instead of an imperative navigate() call
+    // during render (which React warns against).
+    if (loading) return null;
     if (!isAuthenticated) {
-        navigate('/login', { replace: true });
-        return null;
+        return <Navigate to="/login" replace />;
     }
 
     const handleSubmit = async (e) => {

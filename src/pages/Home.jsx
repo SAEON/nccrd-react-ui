@@ -642,7 +642,7 @@ const Home = () => {
             {/* ── Hero Section with Background ───────────────────────────────── */}
             <section
                 className="hero-container"
-                style={{ backgroundImage: 'url("/hero-bg.png")' }}
+                style={{ backgroundImage: 'url("/hero-bg.jpg")' }}
             >
                 <div className="hero-overlay animate-fade-in">
                     <h1 style={{ fontSize: '3.2rem', marginBottom: '1.5rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '-0.03em' }}>
