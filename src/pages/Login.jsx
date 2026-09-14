@@ -36,8 +36,9 @@ const Login = () => {
             <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Log in</h1>
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
-                    <label className="input-label">Email</label>
+                    <label className="input-label" htmlFor="login-email">Email</label>
                     <input
+                        id="login-email"
                         type="email"
                         className="input-field"
                         value={email}
@@ -47,8 +48,9 @@ const Login = () => {
                     />
                 </div>
                 <div className="mb-6">
-                    <label className="input-label">Password</label>
+                    <label className="input-label" htmlFor="login-password">Password</label>
                     <input
+                        id="login-password"
                         type="password"
                         className="input-field"
                         value={password}

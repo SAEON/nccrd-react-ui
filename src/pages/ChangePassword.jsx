@@ -58,8 +58,9 @@ const ChangePassword = () => {
             </p>
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
-                    <label className="input-label">Current (temporary) password</label>
+                    <label className="input-label" htmlFor="current-password">Current (temporary) password</label>
                     <input
+                        id="current-password"
                         type="password"
                         className="input-field"
                         value={currentPassword}
@@ -69,8 +70,9 @@ const ChangePassword = () => {
                     />
                 </div>
                 <div className="mb-6">
-                    <label className="input-label">New password</label>
+                    <label className="input-label" htmlFor="new-password">New password</label>
                     <input
+                        id="new-password"
                         type="password"
                         className="input-field"
                         value={newPassword}
@@ -81,8 +83,9 @@ const ChangePassword = () => {
                     />
                 </div>
                 <div className="mb-6">
-                    <label className="input-label">Confirm new password</label>
+                    <label className="input-label" htmlFor="confirm-password">Confirm new password</label>
                     <input
+                        id="confirm-password"
                         type="password"
                         className="input-field"
                         value={confirmPassword}

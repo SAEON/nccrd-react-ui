@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId, Children, cloneElement, isValidElement } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     getSubmissionById, createSubmission, updateSubmission,
@@ -117,15 +117,28 @@ function normalizeGeoLocation(geo) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Reusable form-field components to reduce repetition
 // ─────────────────────────────────────────────────────────────────────────────
-const Field = ({ label, required, children }) => (
-    <div>
-        <label className="input-label">{label}{required && ' *'}</label>
-        {children}
-    </div>
-);
+/**
+ * Wraps a single form control with a <label htmlFor>. The wrapped control
+ * must accept and forward an `id` prop (native elements do so automatically;
+ * TextInput/NestedField/RegionSelect/VocabularySelect are written to forward
+ * it below). Falls back to a label-derived id when the control has no `name`
+ * (e.g. VocabularySelect), since `name` alone isn't always present/unique.
+ */
+const Field = ({ label, required, children }) => {
+    const autoId = useId();
+    const child = Children.only(children);
+    const id = (isValidElement(child) && child.props.name) || autoId;
+    return (
+        <div>
+            <label className="input-label" htmlFor={id}>{label}{required && ' *'}</label>
+            {isValidElement(child) ? cloneElement(child, { id }) : child}
+        </div>
+    );
+};
 
-const TextInput = ({ name, value, onChange, placeholder, type = 'text', required }) => (
+const TextInput = ({ id, name, value, onChange, placeholder, type = 'text', required }) => (
     <input
+        id={id}
         type={type}
         name={name}
         className="input-field"
@@ -137,8 +150,9 @@ const TextInput = ({ name, value, onChange, placeholder, type = 'text', required
 );
 
 /** Text input or textarea bound to a nested object (mitigation_data / adaptation_data). */
-const NestedField = ({ section, name, value, onChange, textarea, rows = 3, required }) => {
+const NestedField = ({ id, section, name, value, onChange, textarea, rows = 3, required }) => {
     const shared = {
+        id,
         name,
         className: 'input-field',
         value: value ?? '',
@@ -149,8 +163,9 @@ const NestedField = ({ section, name, value, onChange, textarea, rows = 3, requi
 };
 
 /** Native <select> populated from a { code, name }[] region lookup list. */
-const RegionSelect = ({ value, onChange, options, placeholder, disabled, required }) => (
+const RegionSelect = ({ id, value, onChange, options, placeholder, disabled, required }) => (
     <select
+        id={id}
         className="input-field"
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
@@ -171,8 +186,9 @@ const RegionSelect = ({ value, onChange, options, placeholder, disabled, require
  * A stored value that doesn't match any current term (legacy free text)
  * simply renders unselected rather than crashing.
  */
-const VocabularySelect = ({ value, onChange, options, placeholder = '-- Select --', required }) => (
+const VocabularySelect = ({ id, value, onChange, options, placeholder = '-- Select --', required }) => (
     <select
+        id={id}
         className="input-field"
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}

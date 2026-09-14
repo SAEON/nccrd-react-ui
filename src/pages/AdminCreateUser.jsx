@@ -111,8 +111,9 @@ const AdminCreateUser = () => {
 
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
-                    <label className="input-label">Name</label>
+                    <label className="input-label" htmlFor="admin-create-name">Name</label>
                     <input
+                        id="admin-create-name"
                         type="text"
                         className="input-field"
                         value={name}
@@ -121,8 +122,9 @@ const AdminCreateUser = () => {
                     />
                 </div>
                 <div className="mb-6">
-                    <label className="input-label">Email</label>
+                    <label className="input-label" htmlFor="admin-create-email">Email</label>
                     <input
+                        id="admin-create-email"
                         type="email"
                         className="input-field"
                         value={email}
@@ -135,8 +137,8 @@ const AdminCreateUser = () => {
                 {roles.length > 0 && tenants.length > 0 && (
                     <>
                         <div className="mb-6">
-                            <label className="input-label">Role (optional)</label>
-                            <select className="input-field" value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+                            <label className="input-label" htmlFor="admin-create-role">Role (optional)</label>
+                            <select id="admin-create-role" className="input-field" value={roleId} onChange={(e) => setRoleId(e.target.value)}>
                                 <option value="">No role — grant later</option>
                                 {roles.map((r) => (
                                     <option key={r.id} value={r.id}>{r.name}</option>
@@ -145,8 +147,8 @@ const AdminCreateUser = () => {
                         </div>
                         {roleId && (
                             <div className="mb-6">
-                                <label className="input-label">Tenant</label>
-                                <select className="input-field" value={tenantId} onChange={(e) => setTenantId(e.target.value)} required>
+                                <label className="input-label" htmlFor="admin-create-tenant">Tenant</label>
+                                <select id="admin-create-tenant" className="input-field" value={tenantId} onChange={(e) => setTenantId(e.target.value)} required>
                                     <option value="" disabled>Select a tenant…</option>
                                     {tenants.map((t) => (
                                         <option key={t.id} value={t.id}>{t.title || t.hostname}</option>

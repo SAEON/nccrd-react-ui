@@ -182,10 +182,11 @@ const FilterSection = ({ title, isOpen, onToggle, children }) => (
  * @param {string[]} options  – Array of distinct string values from the API
  * @param {function} onChange – Callback receiving the newly selected string value
  */
-const FacetSelect = ({ label, value, options = [], onChange }) => (
+const FacetSelect = ({ id, label, value, options = [], onChange }) => (
     <div style={{ marginBottom: '0.875rem' }}>
-        <label className="input-label">{label}</label>
+        <label className="input-label" htmlFor={id}>{label}</label>
         <select
+            id={id}
             className="input-field"
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -301,7 +302,16 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
 
                 {/* Drop zone */}
                 <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Upload .xlsx file: drag and drop, or activate to browse"
                     onClick={() => fileRef.current?.click()}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            fileRef.current?.click();
+                        }
+                    }}
                     onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
@@ -851,9 +861,10 @@ const Home = () => {
 
                             {/* ── Full-text keyword search ─────────────────── */}
                             <form style={{ marginBottom: '0.5rem' }} onSubmit={handleSearch}>
-                                <label className="input-label">Keywords</label>
+                                <label className="input-label" htmlFor="search-keywords">Keywords</label>
                                 <div style={{ position: 'relative' }}>
                                     <input
+                                        id="search-keywords"
                                         type="text"
                                         className="input-field"
                                         placeholder="Search by title…"
@@ -932,6 +943,7 @@ const Home = () => {
                                  * Once the backend exposes a `province` facet, this just works.
                                  */}
                                 <FacetSelect
+                                    id="facet-province"
                                     label="Province"
                                     value={filters.province}
                                     options={facets.province ?? []}
@@ -947,6 +959,7 @@ const Home = () => {
                                  */}
 
                                 <FacetSelect
+                                    id="facet-implementation_status"
                                     label="Implementation Status"
                                     value={filters.implementation_status}
                                     options={facets.implementation_status ?? []}
@@ -954,6 +967,7 @@ const Home = () => {
                                 />
 
                                 <FacetSelect
+                                    id="facet-funding_type"
                                     label="Funding Type"
                                     value={filters.funding_type}
                                     options={facets.funding_type ?? []}
@@ -971,6 +985,7 @@ const Home = () => {
                             >
                                 {/* Host Sector → mitigation_sector query param */}
                                 <FacetSelect
+                                    id="facet-mitigation_sector"
                                     label="Host Sector"
                                     value={filters.mitigation_sector}
                                     options={facets.mitigation_sector ?? []}
@@ -979,6 +994,7 @@ const Home = () => {
 
                                 {/* Mitigation Type → mitigation_project_type query param */}
                                 <FacetSelect
+                                    id="facet-mitigation_project_type"
                                     label="Mitigation Type (Project Type)"
                                     value={filters.mitigation_project_type}
                                     options={facets.mitigation_project_type ?? []}
@@ -986,6 +1002,7 @@ const Home = () => {
                                 />
 
                                 <FacetSelect
+                                    id="facet-mitigation_program"
                                     label="Mitigation Program"
                                     value={filters.mitigation_program}
                                     options={facets.mitigation_program ?? []}
@@ -994,6 +1011,7 @@ const Home = () => {
 
                                 {/* National Policy → mitigation_national_policy */}
                                 <FacetSelect
+                                    id="facet-mitigation_national_policy"
                                     label="National Policy"
                                     value={filters.mitigation_national_policy}
                                     options={facets.mitigation_national_policy ?? []}
@@ -1018,6 +1036,7 @@ const Home = () => {
                             >
                                 {/* Sector → adaptation_sector */}
                                 <FacetSelect
+                                    id="facet-adaptation_sector"
                                     label="Sector"
                                     value={filters.adaptation_sector}
                                     options={facets.adaptation_sector ?? []}
@@ -1026,6 +1045,7 @@ const Home = () => {
 
                                 {/* Hazard → adaptation_hazard */}
                                 <FacetSelect
+                                    id="facet-adaptation_hazard"
                                     label="Hazard"
                                     value={filters.adaptation_hazard}
                                     options={facets.adaptation_hazard ?? []}
@@ -1034,6 +1054,7 @@ const Home = () => {
 
                                 {/* National Policy → adaptation_national_policy */}
                                 <FacetSelect
+                                    id="facet-adaptation_national_policy"
                                     label="National Policy"
                                     value={filters.adaptation_national_policy}
                                     options={facets.adaptation_national_policy ?? []}
