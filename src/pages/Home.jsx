@@ -676,7 +676,7 @@ const Home = () => {
                             <UploadCloud size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Contribute</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation's climate change projects to the national database</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation's climate change projects to the national database.</p>
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {hasPermission('create-submission') && (
                                 <Link to="/submission/new" className="card-btn" style={{ background: 'var(--accent-primary)', color: 'white', border: 'none' }}>
