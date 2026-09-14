@@ -74,6 +74,8 @@ const SubmissionDetails = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // loadProject is redefined every render — depending on `id` alone avoids a fetch loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { loadProject(); }, [id]);
 
     const loadProject = async () => {

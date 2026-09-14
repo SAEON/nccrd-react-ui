@@ -29,6 +29,13 @@ export default [
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
       'react/jsx-no-target-blank': 'off',
+      // This project has no TypeScript and never adopted the `prop-types`
+      // package (not even a dependency) — the rule was firing on every
+      // component purely because it's part of eslint-plugin-react's
+      // "recommended" preset, not because runtime prop validation was ever
+      // in use here. Adding prop-types declarations with no enforcement
+      // behind them would be dead weight, not a real safety net.
+      'react/prop-types': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

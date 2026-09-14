@@ -42,7 +42,7 @@ const AdminCreateUser = () => {
             <div className="container" style={{ maxWidth: '480px', padding: '4rem 1rem' }}>
                 <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>Add user</h1>
                 <p style={{ color: 'var(--text-muted)' }}>
-                    You don't have permission to create users. Contact an administrator.
+                    You don&apos;t have permission to create users. Contact an administrator.
                 </p>
                 <p style={{ marginTop: '1.5rem', fontSize: '0.85rem' }}>
                     <Link to="/">Back to home</Link>
@@ -75,7 +75,7 @@ const AdminCreateUser = () => {
             <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Add user</h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                 Creates an account with a one-time temporary password. Share it with the
-                new user directly — it can't be retrieved again after this page.
+                new user directly — it can&apos;t be retrieved again after this page.
             </p>
 
             {created && (

@@ -60,7 +60,6 @@ export const CurrentUserProvider = ({ children }) => {
         } else {
             setState({ ...emptyState, loading: false });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const login = async (email, password) => {

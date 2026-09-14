@@ -44,7 +44,7 @@ const Navbar = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
                     <nav className="nav-links">
-                        <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); document.getElementById('project-directory')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                        <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
                             <Search size={14} /> SEARCH DATA
                         </a>
                         {hasPermission('create-submission') && (

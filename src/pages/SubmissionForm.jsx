@@ -334,6 +334,10 @@ const SubmissionForm = () => {
     };
 
     // ── Load existing project when editing ──────────────────────────────────
+    // Deliberately keyed on `id` alone — `isEdit` is derived from `id`'s
+    // presence and `loadProject` is redefined every render, so including
+    // them would either be redundant or cause a fetch loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { if (isEdit) loadProject(); }, [id]);
 
     const loadProject = async () => {
@@ -357,6 +361,7 @@ const SubmissionForm = () => {
                 });
             }
         } catch (err) {
+            console.error('Failed to load project for editing:', err);
             setError('Failed to load project for editing.');
         } finally {
             setLoading(false);
@@ -439,7 +444,7 @@ const SubmissionForm = () => {
             </Link>
             <div className="glass-panel" style={{ padding: '2rem', borderLeft: '4px solid #ef4444' }}>
                 <h3 style={{ color: '#b91c1c' }}>Access Denied</h3>
-                <p>You don't have permission to {isEdit ? 'edit' : 'create'} submissions.</p>
+                <p>You don&apos;t have permission to {isEdit ? 'edit' : 'create'} submissions.</p>
             </div>
         </div>
     );

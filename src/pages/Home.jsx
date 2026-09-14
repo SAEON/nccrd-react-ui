@@ -674,7 +674,7 @@ const Home = () => {
                             <FileText size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Data Reports</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>View progress on South Africa's climate change response.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>View progress on South Africa&apos;s climate change response.</p>
                         <button className="card-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed', background: '#f8fafc' }}>
                             COMING SOON
                         </button>
@@ -686,7 +686,7 @@ const Home = () => {
                             <UploadCloud size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Contribute</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation's climate change projects to the national database.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation&apos;s climate change projects to the national database.</p>
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {hasPermission('create-submission') && (
                                 <Link to="/submission/new" className="card-btn" style={{ background: 'var(--accent-primary)', color: 'white', border: 'none' }}>
