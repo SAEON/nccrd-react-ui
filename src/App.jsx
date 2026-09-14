@@ -7,6 +7,7 @@ import SubmissionForm from './pages/SubmissionForm'
 import Login from './pages/Login'
 import ChangePassword from './pages/ChangePassword'
 import AdminCreateUser from './pages/AdminCreateUser'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="submission/:id" element={<SubmissionDetails />} />
         <Route path="submission/new" element={<RequireAuth><SubmissionForm /></RequireAuth>} />
         <Route path="submission/edit/:id" element={<RequireAuth><SubmissionForm /></RequireAuth>} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   )

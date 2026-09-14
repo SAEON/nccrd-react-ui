@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, PlusCircle, Download, UserCircle, UserPlus, Activity, FileText } from 'lucide-react';
+import { Search, UserPlus, Activity } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 
 const Navbar = () => {
@@ -57,9 +57,6 @@ const Navbar = () => {
                                 <UserPlus size={14} /> ADD USER
                             </Link>
                         )}
-                        <a href="#" className="nav-link">
-                            <FileText size={14} /> DOWNLOAD TEMPLATE
-                        </a>
                     </nav>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-light)', paddingLeft: '1.5rem' }}>
