@@ -1,4 +1,4 @@
-FROM node:20 AS build
+FROM node:22 AS build
 
 # Vite bakes VITE_* vars into the JS bundle at build time, not runtime.
 # Defaults to a relative path, proxied to nccrd-api by nginx.conf's /api/
