@@ -84,18 +84,27 @@ const SubmissionForm = () => {
     const districtCode = formData.geo_location?.district;
 
     useEffect(() => {
-        if (!provinceCode) { setDistricts([]); return; }
+        if (!provinceCode) return;
         getDistrictsByProvince(provinceCode)
             .then(setDistricts)
             .catch((err) => console.warn('[NCCRD] Could not load districts.', err));
     }, [provinceCode]);
 
     useEffect(() => {
-        if (!districtCode) { setLocalDistricts([]); return; }
+        if (!districtCode) return;
         getLocalDistrictsByDistrict(districtCode)
             .then(setLocalDistricts)
             .catch((err) => console.warn('[NCCRD] Could not load local municipalities.', err));
     }, [districtCode]);
+
+    // `districts`/`localDistricts` can still hold the previous parent's list
+    // for one render after its parent is cleared (the effect above simply
+    // skips fetching rather than clearing state itself — see RegionSelect
+    // call sites below for why). Derive what's actually shown from the
+    // current parent value instead, so a cleared province/district always
+    // shows an empty options list rather than a stale one.
+    const visibleDistricts = provinceCode ? districts : [];
+    const visibleLocalDistricts = districtCode ? localDistricts : [];
 
     // ── Controlled vocabulary (sector / hazard / policy / co-benefit / CDM) ──
     // Fetched once on mount; each tree degrades independently to an empty
@@ -133,13 +142,6 @@ const SubmissionForm = () => {
         });
     };
 
-    // ── Load existing project when editing ──────────────────────────────────
-    // Deliberately keyed on `id` alone — `isEdit` is derived from `id`'s
-    // presence and `loadProject` is redefined every render, so including
-    // them would either be redundant or cause a fetch loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { if (isEdit) loadProject(); }, [id]);
-
     const loadProject = async () => {
         try {
             const data = await getSubmissionById(id);
@@ -167,6 +169,13 @@ const SubmissionForm = () => {
             setLoading(false);
         }
     };
+
+    // ── Load existing project when editing ──────────────────────────────────
+    // Deliberately keyed on `id` alone — `isEdit` is derived from `id`'s
+    // presence and `loadProject` is redefined every render, so including
+    // them would either be redundant or cause a fetch loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { if (isEdit) loadProject(); }, [id]);
 
     // ── Field change handlers ───────────────────────────────────────────────
     const handleChange = (e) => {
@@ -371,7 +380,7 @@ const SubmissionForm = () => {
                             <RegionSelect
                                 value={districtCode}
                                 onChange={(v) => handleGeoChange('district', v)}
-                                options={districts}
+                                options={visibleDistricts}
                                 placeholder={provinceCode ? '-- Select District --' : '-- Select a province first --'}
                                 disabled={!provinceCode}
                             />
@@ -381,7 +390,7 @@ const SubmissionForm = () => {
                             <RegionSelect
                                 value={formData.geo_location?.local_municipality}
                                 onChange={(v) => handleGeoChange('local_municipality', v)}
-                                options={localDistricts}
+                                options={visibleLocalDistricts}
                                 placeholder={districtCode ? '-- Select Local Municipality --' : '-- Select a district first --'}
                                 disabled={!districtCode}
                             />

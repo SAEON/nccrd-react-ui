@@ -133,16 +133,6 @@ const Home = () => {
     const [showUploadModal, setShowUploadModal] = useState(false);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Effects
-    // ─────────────────────────────────────────────────────────────────────────
-
-    useEffect(() => {
-        // Both calls are independent — fire them in parallel on first mount.
-        loadData();
-        loadFacets();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // ─────────────────────────────────────────────────────────────────────────
     // Phase 1: Data fetching
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -213,6 +203,16 @@ const Home = () => {
             setLoading(false);
         }
     };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Effects
+    // ─────────────────────────────────────────────────────────────────────────
+
+    useEffect(() => {
+        // Both calls are independent — fire them in parallel on first mount.
+        loadData();
+        loadFacets();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─────────────────────────────────────────────────────────────────────────
     // Event handlers

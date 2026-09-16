@@ -74,10 +74,6 @@ const SubmissionDetails = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // loadProject is redefined every render — depending on `id` alone avoids a fetch loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { loadProject(); }, [id]);
-
     const loadProject = async () => {
         setLoading(true);
         try {
@@ -91,6 +87,10 @@ const SubmissionDetails = () => {
             setLoading(false);
         }
     };
+
+    // loadProject is redefined every render — depending on `id` alone avoids a fetch loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { loadProject(); }, [id]);
 
     const handleDelete = async () => {
         if (!window.confirm('Are you sure you want to permanently delete this project?')) return;

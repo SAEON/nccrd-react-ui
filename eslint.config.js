@@ -17,7 +17,7 @@ export default [
         sourceType: 'module',
       },
     },
-    settings: { react: { version: '18.3' } },
+    settings: { react: { version: '19.3' } },
     plugins: {
       react,
       'react-hooks': reactHooks,
@@ -36,6 +36,23 @@ export default [
       // in use here. Adding prop-types declarations with no enforcement
       // behind them would be dead weight, not a real safety net.
       'react/prop-types': 'off',
+      // react-hooks v7's "recommended" preset bundles the new React
+      // Compiler-aligned rules, several of which are genuinely useful
+      // (rules-of-hooks, exhaustive-deps, the use-before-declare checks
+      // under "immutability" — all kept, and fixed several real call-order
+      // issues they caught). set-state-in-effect is different: it flags
+      // *any* function call from an effect body that transitively calls
+      // setState, even inside an async function after an await — which
+      // means it flags the standard "call an async loader from useEffect
+      // on mount" data-fetching pattern itself, not just genuine
+      // synchronous derived-state-via-effect bugs. That pattern is used
+      // throughout this app (Home, SubmissionForm, SubmissionDetails,
+      // CurrentUserContext) and is exactly what React's own docs show for
+      // effect-based fetching without a data-fetching library. Satisfying
+      // this rule properly would mean adopting something like TanStack
+      // Query app-wide, which is a real architectural change, not a lint
+      // fix — out of scope here.
+      'react-hooks/set-state-in-effect': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

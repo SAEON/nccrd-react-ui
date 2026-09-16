@@ -33,7 +33,14 @@ const emptyState = {
  * gated UI stays hidden rather than flashing in and then disappearing.
  */
 export const CurrentUserProvider = ({ children }) => {
-    const [state, setState] = useState({ ...emptyState, loading: true });
+    // Lazy initializer computes the correct starting shape synchronously
+    // (loading only when there's actually a token to resolve) instead of
+    // always starting at loading:true and having the mount effect
+    // synchronously flip it back to false when there's no token — that
+    // setState was pure derived state, not a real effect.
+    const [state, setState] = useState(() =>
+        getToken() ? { ...emptyState, loading: true } : { ...emptyState, loading: false }
+    );
 
     const refreshCurrentUser = async () => {
         try {
@@ -57,8 +64,6 @@ export const CurrentUserProvider = ({ children }) => {
     useEffect(() => {
         if (getToken()) {
             refreshCurrentUser();
-        } else {
-            setState({ ...emptyState, loading: false });
         }
     }, []);
 
