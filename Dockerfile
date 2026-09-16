@@ -20,3 +20,14 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
+
+# wget (BusyBox) ships on nginx:alpine by default; curl doesn't. This is a
+# static file server with no backend logic of its own, so checking "/"
+# (always index.html, always 200 if nginx is actually serving) is enough —
+# there's no separate app process to distinguish from the web server here.
+# Use 127.0.0.1, not localhost: this image's nginx.conf only listens on
+# 0.0.0.0:80 (IPv4), but musl/BusyBox wget resolves "localhost" to ::1
+# first, so it would always get connection-refused over IPv6 and never
+# fall back to the working IPv4 address.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1
