@@ -224,7 +224,10 @@ const SubmissionForm = () => {
                 }
             }
 
-            navigate('/');
+            // Land on the saved submission itself (not the homepage) with a
+            // flash confirmation — previously this navigated straight to
+            // "/" with no feedback that anything had happened.
+            navigate(`/submission/${submissionId}`, { state: { justSaved: isEdit ? 'updated' : 'created' } });
         } catch (err) {
             // Surface the backend's message directly — it's more useful than a generic string
             setError(err.message || 'Failed to save submission. Please check all required fields.');

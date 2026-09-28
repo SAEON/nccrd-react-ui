@@ -1,11 +1,11 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getSubmissionById, deleteSubmission, API_BASE_URL } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import {
     ArrowLeft, Clock, Banknote, MapPin, Building,
     Target, Activity, Edit2, Trash2, Mail,
-    Leaf, Zap, FileDown, FolderOpen,
+    Leaf, Zap, FileDown, FolderOpen, CheckCircle, X,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,10 +69,15 @@ const DetailPanel = ({ icon, title, rows }) => {
 const SubmissionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { hasPermission } = useCurrentUser();
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    // Flash confirmation after SubmissionForm redirects here post-save —
+    // dismissible, and read once so a later refresh of this same page
+    // (or navigating away and back) doesn't keep re-showing it.
+    const [justSaved, setJustSaved] = useState(location.state?.justSaved ?? null);
 
     const loadProject = async () => {
         setLoading(true);
@@ -129,6 +134,31 @@ const SubmissionDetails = () => {
 
     return (
         <div className="container" style={{ paddingBottom: '4rem' }}>
+            {justSaved && (
+                <div
+                    role="status"
+                    className="glass-panel"
+                    style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: '0.75rem', padding: '0.85rem 1.25rem', marginTop: '2rem',
+                        borderLeft: '4px solid #16a34a', color: '#15803d',
+                    }}
+                >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <CheckCircle size={18} />
+                        {justSaved === 'created' ? 'Submission created successfully.' : 'Submission updated successfully.'}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setJustSaved(null)}
+                        aria-label="Dismiss"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: '0.25rem' }}
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
+
             {/* Back button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <Link
