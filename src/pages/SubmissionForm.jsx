@@ -6,8 +6,10 @@ import {
     getVocabulary, uploadProgressReport, API_BASE_URL,
 } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
-import { ArrowLeft, Save, Activity, AlertTriangle, FileDown, Paperclip, X } from 'lucide-react';
+import { ArrowLeft, Save, Activity, AlertTriangle, FileDown, Paperclip, X, History } from 'lucide-react';
 import { sanitizePayload, normalizeGeoLocation } from '../utils/submissionPayload';
+import { draftKey, loadDraft, saveDraft, clearDraft } from '../utils/draftStorage';
+import ReauthModal from '../components/ReauthModal';
 import { Field, TextInput, NestedField, RegionSelect, VocabularySelect, SectionHeading } from '../components/form/FormFields';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -18,11 +20,22 @@ const SubmissionForm = () => {
     const navigate = useNavigate();
     const isEdit = !!id;
     const requiredPermission = isEdit ? 'update-submission' : 'create-submission';
-    const { hasPermission, loading: authLoading } = useCurrentUser();
+    const { user, hasPermission, loading: authLoading } = useCurrentUser();
 
     const [loading, setLoading] = useState(isEdit);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+
+    // ── Safe capture: drafts, re-login and edit conflicts ───────────────────
+    // `updatedate` of the version being edited, sent back on save so the API
+    // can refuse to overwrite a newer edit by someone else (HTTP 409).
+    const [baseUpdatedate, setBaseUpdatedate] = useState(null);
+    const [draftOffer, setDraftOffer] = useState(null);     // unsaved draft found on open
+    const [autosaveReady, setAutosaveReady] = useState(false);
+    const [draftChecked, setDraftChecked] = useState(false);
+    const baselineRef = useRef(null);                       // formData as loaded, JSON
+    const [showReauth, setShowReauth] = useState(false);
+    const [conflict, setConflict] = useState(null);         // 409 detail
 
     // ── Progress reports (MRV) — staged locally, uploaded after the
     // submission itself is saved (they're children of it via submission_id,
@@ -83,18 +96,24 @@ const SubmissionForm = () => {
     const provinceCode = formData.geo_location?.province;
     const districtCode = formData.geo_location?.district;
 
+    // `stale` drops a response for a value that has since changed (e.g. the
+    // lookup by stored name "Western Cape" finishing after the one by "WC").
     useEffect(() => {
-        if (!provinceCode) return;
+        if (!provinceCode) return undefined;
+        let stale = false;
         getDistrictsByProvince(provinceCode)
-            .then(setDistricts)
+            .then((list) => { if (!stale) setDistricts(list); })
             .catch((err) => console.warn('[NCCRD] Could not load districts.', err));
+        return () => { stale = true; };
     }, [provinceCode]);
 
     useEffect(() => {
-        if (!districtCode) return;
+        if (!districtCode) return undefined;
+        let stale = false;
         getLocalDistrictsByDistrict(districtCode)
-            .then(setLocalDistricts)
+            .then((list) => { if (!stale) setLocalDistricts(list); })
             .catch((err) => console.warn('[NCCRD] Could not load local municipalities.', err));
+        return () => { stale = true; };
     }, [districtCode]);
 
     // `districts`/`localDistricts` can still hold the previous parent's list
@@ -103,6 +122,28 @@ const SubmissionForm = () => {
     // call sites below for why). Derive what's actually shown from the
     // current parent value instead, so a cleared province/district always
     // shows an empty options list rather than a stale one.
+    // Saved projects store region *names* ("Western Cape"); these dropdowns
+    // are keyed by code ("WC"). Swap a stored name for its code once the
+    // matching list has loaded, so editing shows the current location and the
+    // district list (fetched by province code) can load. A swap made before
+    // the user touches anything also moves the draft baseline, so it doesn't
+    // count as an unsaved change.
+    const nameToCode = (field, options) => {
+        setFormData((prev) => {
+            const value = prev.geo_location?.[field];
+            if (!value || options.some((o) => o.code === value)) return prev;
+            const match = options.find((o) => o.name?.trim().toLowerCase() === value.trim().toLowerCase());
+            if (!match) return prev;
+            const next = { ...prev, geo_location: { ...prev.geo_location, [field]: match.code } };
+            if (baselineRef.current === JSON.stringify(prev)) baselineRef.current = JSON.stringify(next);
+            return next;
+        });
+    };
+    const localCode = formData.geo_location?.local_municipality;
+    useEffect(() => { nameToCode('province', provinces); }, [provinces, provinceCode]);
+    useEffect(() => { nameToCode('district', districts); }, [districts, districtCode]);
+    useEffect(() => { nameToCode('local_municipality', localDistricts); }, [localDistricts, localCode]);
+
     const visibleDistricts = provinceCode ? districts : [];
     const visibleLocalDistricts = districtCode ? localDistricts : [];
 
@@ -150,6 +191,7 @@ const SubmissionForm = () => {
                 if (data.start_date) data.start_date = new Date(data.start_date).toISOString().split('T')[0];
                 if (data.end_date) data.end_date = new Date(data.end_date).toISOString().split('T')[0];
 
+                setBaseUpdatedate(data.updatedate ?? null);
                 setFormData({
                     ...data,
                     // The API returns nested records as "mitigation"/"adaptation";
@@ -177,6 +219,45 @@ const SubmissionForm = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { if (isEdit) loadProject(); }, [id]);
 
+    // ── Drafts ──────────────────────────────────────────────────────────────
+    const key = draftKey(user?.id, id);
+
+    // Once the form holds its starting data, look for an unsaved draft. Auto-save
+    // stays off until the user restores or discards it, so the draft is never
+    // overwritten by the freshly loaded version.
+    useEffect(() => {
+        if (loading || !user || draftChecked) return;
+        baselineRef.current = JSON.stringify(formData);
+        const draft = loadDraft(key);
+        if (draft && JSON.stringify(draft.data) !== baselineRef.current) setDraftOffer(draft);
+        else setAutosaveReady(true);
+        setDraftChecked(true);
+    }, [loading, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Save a draft shortly after each change; drop it once the form matches
+    // what's saved again.
+    useEffect(() => {
+        if (!autosaveReady) return undefined;
+        const timer = setTimeout(() => {
+            if (JSON.stringify(formData) === baselineRef.current) clearDraft(key);
+            else saveDraft(key, formData, baseUpdatedate);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [formData, autosaveReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const restoreDraft = () => {
+        setFormData(draftOffer.data);
+        if (isEdit) setBaseUpdatedate(draftOffer.baseUpdatedate ?? null);
+        setDraftOffer(null);
+        setAutosaveReady(true);
+    };
+
+    const discardDraft = () => {
+        clearDraft(key);
+        setDraftOffer(null);
+        setAutosaveReady(true);
+    };
+
     // ── Field change handlers ───────────────────────────────────────────────
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -196,19 +277,29 @@ const SubmissionForm = () => {
         handleNestedChange({ target: { name, value } }, section);
 
     // ── Submit ──────────────────────────────────────────────────────────────
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
+        save();
+    };
+
+    /** @param {boolean} overwrite - skip the edit-conflict check (user chose to replace the newer version) */
+    const save = async ({ overwrite = false } = {}) => {
         setSaving(true);
         setError(null);
+        setConflict(null);
         try {
             const payload = sanitizePayload(formData);
             let submissionId = id;
             if (isEdit) {
-                await updateSubmission(id, payload);
+                if (!overwrite) payload.expected_updatedate = baseUpdatedate;
+                const updated = await updateSubmission(id, payload);
+                setBaseUpdatedate(updated?.updatedate ?? null);
             } else {
                 const created = await createSubmission(payload);
                 submissionId = created.submission_id;
             }
+            clearDraft(key);
+            baselineRef.current = JSON.stringify(formData);
 
             if (pendingReports.length > 0) {
                 const results = await Promise.allSettled(
@@ -229,13 +320,24 @@ const SubmissionForm = () => {
             // "/" with no feedback that anything had happened.
             navigate(`/submission/${submissionId}`, { state: { justSaved: isEdit ? 'updated' : 'created' } });
         } catch (err) {
-            // Surface the backend's message directly — it's more useful than a generic string
-            setError(err.message || 'Failed to save submission. Please check all required fields.');
-            console.error(err);
+            if (err.status === 401) {
+                // Session expired: log in over the form, then retry this save.
+                saveDraft(key, formData, baseUpdatedate);
+                setShowReauth(true);
+            } else if (err.status === 409) {
+                saveDraft(key, formData, baseUpdatedate);
+                setConflict(err.detail || {});
+            } else {
+                // Surface the backend's message directly — it's more useful than a generic string
+                setError(err.message || 'Failed to save submission. Please check all required fields.');
+                console.error(err);
+            }
         } finally {
             setSaving(false);
         }
     };
+
+    const formatWhen = (iso) => (iso ? new Date(iso).toLocaleString() : 'recently');
 
     // ── Loading spinner ─────────────────────────────────────────────────────
     if (loading || authLoading) return (
@@ -282,6 +384,59 @@ const SubmissionForm = () => {
                 <h1 style={{ marginBottom: '1.5rem' }}>{isEdit ? 'Edit Project' : 'Add New Project'}</h1>
 
                 {/* Error banner */}
+                {draftOffer && (
+                    <div role="status" style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
+                        padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)',
+                        borderLeft: '4px solid var(--accent-primary)',
+                        background: 'rgba(28,61,47,0.06)',
+                        marginBottom: '1.5rem',
+                    }}>
+                        <History size={18} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+                        <span style={{ flex: 1, minWidth: '14rem', fontSize: '0.9rem' }}>
+                            You have unsaved changes from {formatWhen(draftOffer.savedAt)}.
+                        </span>
+                        <button type="button" className="btn btn-primary" onClick={restoreDraft}>Restore my changes</button>
+                        <button type="button" className="btn btn-outline" onClick={discardDraft}>Discard</button>
+                    </div>
+                )}
+
+                {conflict && (
+                    <div role="alert" style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flexWrap: 'wrap',
+                        padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)',
+                        borderLeft: '4px solid #f59e0b',
+                        background: 'rgba(245,158,11,0.08)',
+                        marginBottom: '1.5rem',
+                    }}>
+                        <AlertTriangle size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                        <div style={{ flex: 1, minWidth: '14rem', fontSize: '0.9rem' }}>
+                            <strong>{conflict.updatedby || 'Someone else'}</strong> saved this project at{' '}
+                            {formatWhen(conflict.updatedate)}, after you opened it. Saving now would replace their changes.
+                            Your changes are kept as a draft either way.
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button type="button" className="btn btn-outline" onClick={() => window.location.reload()}>
+                                Load their version
+                            </button>
+                            <button type="button" className="btn btn-primary" onClick={() => save({ overwrite: true })}>
+                                Replace with mine
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {showReauth && (
+                    <ReauthModal
+                        email={user?.email}
+                        onSuccess={() => { setShowReauth(false); save(); }}
+                        onCancel={() => {
+                            setShowReauth(false);
+                            setError('Not saved: your session expired. Your changes are kept as a draft on this computer.');
+                        }}
+                    />
+                )}
+
                 {error && (
                     <div style={{
                         display: 'flex', alignItems: 'flex-start', gap: '0.75rem',

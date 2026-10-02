@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getSubmissionById, deleteSubmission, API_BASE_URL } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
+import { resolveValue } from '../utils/resolveValue';
 import {
     ArrowLeft, Clock, Banknote, MapPin, Building,
     Target, Activity, Edit2, Trash2, Mail,
@@ -33,11 +34,6 @@ const SidebarRow = ({ icon, label, children }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 // Detail list sub-panel (used for Mitigation / Adaptation sections)
 // ─────────────────────────────────────────────────────────────────────────────
-const resolveValue = (v) => {
-    if (Array.isArray(v)) return v.map(item => item?.term ?? item).filter(Boolean).join(', ') || null;
-    if (v && typeof v === 'object' && 'term' in v) return v.term;
-    return v;
-};
 
 /**
  * New progress-report uploads store a root-relative file_url (served by the

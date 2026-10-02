@@ -17,11 +17,13 @@
  *      – Project Filters accordion:    checkboxes + 3 FacetSelects.
  *      – Mitigation Filters accordion: 4 FacetSelects.
  *      – Adaptation Filters accordion: 3 FacetSelects.
- *      – Prominent "Apply Filters" button at the bottom.
+ *      – Results refresh as soon as any filter changes (no Apply button).
  *
  *   4. Data Fetching Optimization
- *      – loadData() builds query params at call-time from `filters` + `searchQuery`,
+ *      – loadData() builds query params from `filters` + the applied keyword,
  *        skipping every empty/null value so the backend only receives active filters.
+ *      – An effect re-runs it whenever those change, aborting the superseded
+ *        request so a slow earlier response can't overwrite newer results.
  *
  * Constraints:
  *   ✓ No MUI / Bootstrap — only existing CSS classes (.glass-panel, .input-field,
@@ -31,23 +33,31 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { getSubmissions, getFacets } from '../services/api';
+import { Link, useSearchParams } from 'react-router-dom';
+import { getSubmissions, getFacets, downloadExport } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import Navbar from '../components/Navbar';
 import InterventionBadge from '../components/InterventionBadge';
 import FilterSection from '../components/FilterSection';
 import FacetSelect from '../components/FacetSelect';
 import BulkUploadModal from '../components/BulkUploadModal';
+import { SORT_OPTIONS, DEFAULT_SORT, sortSubmissions } from '../utils/sortSubmissions';
+import { buildQueryParams } from '../utils/submissionQuery';
 import {
     Search, ChevronRight, Activity, Leaf, FileText,
     UploadCloud, Compass, Database, Zap, GitMerge,
-    X, Upload, Filter,
+    X, Upload, Filter, Download,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Project cards rendered per "Show more" step. */
+const PAGE_SIZE = 50;
+
+/** Pause in typing before the keyword search runs. */
+const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * Canonical empty filter state.
@@ -60,6 +70,7 @@ import {
  */
 const EMPTY_FILTERS = {
     // ── Project-level ──────────────────────────────────────────────────────────
+    mine: false,                    // only the logged-in user's own submissions
     intervention_measurement: [],   // string[] — Mitigation | Adaptation | Cross Cutting
     province: '',     // JSONB containment filter on the backend
     implementation_status: '',     // facetised — distinct values from Submission table
@@ -83,10 +94,16 @@ const EMPTY_FILTERS = {
 
 const Home = () => {
 
-    const { hasPermission } = useCurrentUser();
+    const { hasPermission, isAuthenticated, loading: authLoading } = useCurrentUser();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [downloading, setDownloading] = useState(false);
 
     // ── Phase 1: Core data state ──────────────────────────────────────────────
     const [submissions, setSubmissions] = useState([]);
+    // Rendering all ~3k cards at once makes the page sluggish; show a page at a time.
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [sortBy, setSortBy] = useState(DEFAULT_SORT);
+    const sortedSubmissions = useMemo(() => sortSubmissions(submissions, sortBy), [submissions, sortBy]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -113,6 +130,11 @@ const Home = () => {
 
     // ── Phase 1: Search state ─────────────────────────────────────────────────
     const [searchQuery, setSearchQuery] = useState('');
+    // The keyword actually sent to the API: follows `searchQuery` after a short
+    // pause in typing, or immediately on Enter.
+    const [appliedQuery, setAppliedQuery] = useState('');
+    // Bumped to force a reload with unchanged filters (e.g. after an upload).
+    const [reloadKey, setReloadKey] = useState(0);
 
     // ── Phase 1: Filter state ─────────────────────────────────────────────────
     const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -161,45 +183,21 @@ const Home = () => {
      * Only non-empty values are included so the backend receives clean URLs and
      * only applies the filters the user actually wants.
      */
-    const loadData = async () => {
+    const loadData = async (signal) => {
         setLoading(true);
         setError(null);
         try {
-            const queryParams = {};
+            const queryParams = buildQueryParams(filters, appliedQuery);
 
-            // ── Full-text keyword search ─────────────────────────────────────
-            if (searchQuery.trim()) {
-                queryParams.q = searchQuery.trim();
-            }
-
-            // ── Intervention type (multi-select → CSV for the backend) ────────
-            if (filters.intervention_measurement.length > 0) {
-                queryParams.intervention_measurement =
-                    filters.intervention_measurement.join(',');
-            }
-
-            // ── Project-level scalar filters ─────────────────────────────────
-            if (filters.province) queryParams.province = filters.province;
-            if (filters.implementation_status) queryParams.implementation_status = filters.implementation_status;
-            if (filters.funding_type) queryParams.funding_type = filters.funding_type;
-
-            // ── Mitigation child-table filters ────────────────────────────────
-            if (filters.mitigation_sector) queryParams.mitigation_sector = filters.mitigation_sector;
-            if (filters.mitigation_project_type) queryParams.mitigation_project_type = filters.mitigation_project_type;
-            if (filters.mitigation_program) queryParams.mitigation_program = filters.mitigation_program;
-            if (filters.mitigation_national_policy) queryParams.mitigation_national_policy = filters.mitigation_national_policy;
-
-            // ── Adaptation child-table filters ────────────────────────────────
-            if (filters.adaptation_sector) queryParams.adaptation_sector = filters.adaptation_sector;
-            if (filters.adaptation_hazard) queryParams.adaptation_hazard = filters.adaptation_hazard;
-            if (filters.adaptation_national_policy) queryParams.adaptation_national_policy = filters.adaptation_national_policy;
-
-            const data = await getSubmissions(queryParams);
+            const data = await getSubmissions(queryParams, { signal });
             setSubmissions(Array.isArray(data) ? data : []);
+            setVisibleCount(PAGE_SIZE);
+            setLoading(false);
         } catch (err) {
+            // Superseded by a newer filter change — that request owns the state now.
+            if (err.name === 'AbortError') return;
             setError(`Failed to connect to the backend. Make sure nccrd-api is running on port 2022.`);
             console.error(err);
-        } finally {
             setLoading(false);
         }
     };
@@ -209,10 +207,48 @@ const Home = () => {
     // ─────────────────────────────────────────────────────────────────────────
 
     useEffect(() => {
-        // Both calls are independent — fire them in parallel on first mount.
-        loadData();
         loadFacets();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Reload results whenever a filter or the applied keyword changes (and on
+    // mount). Aborting on cleanup drops the superseded request, so clicking
+    // Mitigation then Gauteng quickly shows only the Mitigation + Gauteng result.
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData(controller.signal);
+        return () => controller.abort();
+    }, [filters, appliedQuery, reloadKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // "My submissions" in the header links here as /?mine=1: switch the filter
+    // on, tidy the URL and bring the results into view.
+    useEffect(() => {
+        if (searchParams.get('mine') !== '1') return;
+        setFilters((prev) => ({ ...prev, mine: true }));
+        setSearchParams({}, { replace: true });
+        requestAnimationFrame(() => document.getElementById('project-directory')?.scrollIntoView?.({ behavior: 'smooth' }));
+    }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // The filter needs a login; drop it if the user logs out.
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) setFilters((prev) => (prev.mine ? { ...prev, mine: false } : prev));
+    }, [authLoading, isAuthenticated]);
+
+    const handleDownload = async () => {
+        setDownloading(true);
+        try {
+            await downloadExport(buildQueryParams(filters, appliedQuery), 'xlsx');
+        } catch (err) {
+            setError(`Download failed: ${err.message}`);
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    // Apply the keyword once typing pauses, rather than on every keystroke.
+    useEffect(() => {
+        const timer = setTimeout(() => setAppliedQuery(searchQuery), SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Event handlers
@@ -221,7 +257,7 @@ const Home = () => {
     /** Submit keyword search via Enter key or the magnifier button. */
     const handleSearch = (e) => {
         e.preventDefault();
-        loadData();
+        setAppliedQuery(searchQuery);
     };
 
     /**
@@ -278,6 +314,7 @@ const Home = () => {
     const activeFilterCount = useMemo(() => {
         let n = 0;
         if (searchQuery.trim()) n++;
+        if (filters.mine) n++;
         if (filters.intervention_measurement.length > 0) n++;
         if (filters.province) n++;
         if (filters.implementation_status) n++;
@@ -303,7 +340,7 @@ const Home = () => {
             {showUploadModal && (
                 <BulkUploadModal
                     onClose={() => setShowUploadModal(false)}
-                    onSuccess={() => { setShowUploadModal(false); loadData(); }}
+                    onSuccess={() => { setShowUploadModal(false); setReloadKey((k) => k + 1); }}
                 />
             )}
 
@@ -316,7 +353,7 @@ const Home = () => {
                 style={{ backgroundImage: 'url("/hero-bg.jpg")' }}
             >
                 <div className="hero-overlay animate-fade-in">
-                    <h1 style={{ fontSize: '3.2rem', marginBottom: '1.5rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '-0.03em' }}>
+                    <h1 className="hero-title" style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '-0.03em' }}>
                         National Climate Change Response Database
                     </h1>
                     <p style={{ fontSize: '1.1rem', color: 'var(--accent-secondary)', fontWeight: 500, maxWidth: '600px', margin: '0 auto' }}>
@@ -327,7 +364,7 @@ const Home = () => {
 
             {/* ── Action cards ──────────────────────────────────────────────── */}
             <div className="container" style={{ marginTop: '-5rem', position: 'relative', zIndex: 10 }}>
-                <div className="flex gap-6 animate-fade-in stagger-2">
+                <div className="flex gap-6 animate-fade-in stagger-2 home-action-cards">
 
                     {/* Data Reports */}
                     <div className="glass-panel" style={{ flex: 1, padding: '2.5rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -336,9 +373,9 @@ const Home = () => {
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Data Reports</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>View progress on South Africa&apos;s climate change response.</p>
-                        <button className="card-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed', background: '#f8fafc' }}>
-                            COMING SOON
-                        </button>
+                        <Link to="/reports" className="card-btn">
+                            VIEW REPORTS
+                        </Link>
                     </div>
 
                     {/* Contribute */}
@@ -382,7 +419,7 @@ const Home = () => {
 
             {/* ── Stats bar ────────────────────────────────────────────────── */}
             <div className="container" style={{ marginTop: '3rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                <div className="home-stats">
                     <div className="stat-tag">
                         <div style={{ background: 'white', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--accent-border)' }}>
                             <Database size={18} color="var(--accent-primary)" />
@@ -431,14 +468,14 @@ const Home = () => {
                     Project Directory
                 </h2>
 
-                <div className="flex gap-8">
+                <div className="flex gap-8 home-directory">
 
                     {/* ══════════════════════════════════════════════════════════
                         Phase 3: Faceted Search Sidebar
                         ══════════════════════════════════════════════════════════ */}
-                    <div style={{ width: '300px', flexShrink: 0 }}>
+                    <div className="home-sidebar">
                         <div
-                            className="glass-panel"
+                            className="glass-panel home-sidebar-panel"
                             style={{
                                 padding: '1.5rem',
                                 position: 'sticky',
@@ -520,6 +557,18 @@ const Home = () => {
                                 )}
                             </div>
 
+                            {/* ── Own submissions (logged-in users) ───────────── */}
+                            {isAuthenticated && (
+                                <label className="my-submissions-toggle">
+                                    <input
+                                        type="checkbox"
+                                        checked={filters.mine}
+                                        onChange={(e) => setFilter('mine', e.target.checked)}
+                                    />
+                                    Only my submissions
+                                </label>
+                            )}
+
                             {/* ── Full-text keyword search ─────────────────── */}
                             <form style={{ marginBottom: '0.5rem' }} onSubmit={handleSearch}>
                                 <label className="input-label" htmlFor="search-keywords">Keywords</label>
@@ -597,17 +646,17 @@ const Home = () => {
 
                                 {/*
                                  * Province
-                                 * The backend filter param `province` uses JSONB containment
-                                 * (@>) on geo_location, but /facets/submission does not enumerate
-                                 * province values because geo_location is a JSONB blob.
-                                 * FacetSelect gracefully shows "(ALL)" only when options is [].
-                                 * Once the backend exposes a `province` facet, this just works.
+                                 * Options come from /facets/submission. "National" is the legacy
+                                 * value for country-wide projects; it is labelled as South Africa
+                                 * and listed first, but still sent to the backend as "National".
                                  */}
                                 <FacetSelect
                                     id="facet-province"
                                     label="Province"
                                     value={filters.province}
                                     options={facets.province ?? []}
+                                    labels={{ National: 'South Africa (National)' }}
+                                    pinned={['National']}
                                     onChange={(v) => setFilter('province', v)}
                                 />
 
@@ -729,14 +778,6 @@ const Home = () => {
                                  */}
                             </FilterSection>
 
-                            {/* ── Apply Filters CTA ─────────────────────────── */}
-                            <button
-                                className="btn btn-primary w-full"
-                                onClick={loadData}
-                                style={{ marginTop: '1.25rem' }}
-                            >
-                                Apply Filters
-                            </button>
                         </div>
                     </div>
 
@@ -744,17 +785,45 @@ const Home = () => {
                         Results list
                         ══════════════════════════════════════════════════════════ */}
                     <div style={{ flexGrow: 1, minWidth: 0 }}>
-                        <div className="flex justify-between items-center" style={{ marginBottom: '1.5rem' }}>
-                            <h3 style={{ fontSize: '1.4rem', margin: 0 }}>Results</h3>
-                            {!loading && !error && (
-                                <span className="badge badge-success">
-                                    {submissions.length} project{submissions.length !== 1 ? 's' : ''}
-                                </span>
-                            )}
+                        <div className="flex justify-between items-center" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <div className="flex items-center" style={{ gap: '0.75rem' }}>
+                                <h3 style={{ fontSize: '1.4rem', margin: 0 }}>Results</h3>
+                                {!error && !(loading && submissions.length === 0) && (
+                                    <span className="badge badge-success">
+                                        {submissions.length} project{submissions.length !== 1 ? 's' : ''}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    onClick={handleDownload}
+                                    disabled={downloading || submissions.length === 0}
+                                    title="Download these results as an Excel file"
+                                    style={{ padding: '0.5rem 0.9rem', gap: '0.4rem', whiteSpace: 'nowrap' }}
+                                >
+                                    <Download size={15} /> {downloading ? 'Preparing…' : 'Download'}
+                                </button>
+                                <label htmlFor="sort-results" className="input-label" style={{ margin: 0, whiteSpace: 'nowrap' }}>
+                                    Sort by
+                                </label>
+                                <select
+                                    id="sort-results"
+                                    className="input-field"
+                                    value={sortBy}
+                                    onChange={(e) => { setSortBy(e.target.value); setVisibleCount(PAGE_SIZE); }}
+                                    style={{ cursor: 'pointer', fontSize: '0.9rem', padding: '0.5rem 0.8rem', width: 'auto' }}
+                                >
+                                    {SORT_OPTIONS.map((o) => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
-                        {/* Loading skeleton */}
-                        {loading ? (
+                        {/* Loading skeleton — first load only; refreshes dim the current list */}
+                        {loading && submissions.length === 0 ? (
                             <div className="glass-panel text-center" style={{ padding: '4rem' }}>
                                 <Activity
                                     size={44}
@@ -797,8 +866,14 @@ const Home = () => {
 
                         ) : (
                             /* Submission cards */
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {submissions.map((sub) => (
+                            <div
+                                aria-busy={loading}
+                                style={{
+                                    display: 'flex', flexDirection: 'column', gap: '1rem',
+                                    opacity: loading ? 0.5 : 1, transition: 'opacity 0.15s',
+                                }}
+                            >
+                                {sortedSubmissions.slice(0, visibleCount).map((sub) => (
                                     <div
                                         key={sub.id}
                                         className="glass-panel"
@@ -843,6 +918,16 @@ const Home = () => {
                                         </div>
                                     </div>
                                 ))}
+                                {visibleCount < submissions.length && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline"
+                                        style={{ alignSelf: 'center' }}
+                                        onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                                    >
+                                        Show more ({submissions.length - visibleCount} remaining)
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>

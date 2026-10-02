@@ -28,3 +28,18 @@ export const clearToken = () => {
         // no-op
     }
 };
+
+/**
+ * Expiry of the stored token in epoch milliseconds, read from its `exp`
+ * claim (no signature check — the backend remains the authority), or null.
+ */
+export const getTokenExpiry = () => {
+    const token = getToken();
+    if (!token) return null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+    } catch {
+        return null;
+    }
+};

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getCurrentUser, login as apiLogin } from '../services/api';
-import { getToken, setToken, clearToken } from '../services/authStorage';
+import { getCurrentUser, login as apiLogin, refreshToken } from '../services/api';
+import { getToken, setToken, clearToken, getTokenExpiry } from '../services/authStorage';
+import { CHECK_INTERVAL_MS, shouldRefresh } from '../services/sessionKeepAlive';
 
 const CurrentUserContext = createContext({
     user: null,
@@ -66,6 +67,31 @@ export const CurrentUserProvider = ({ children }) => {
             refreshCurrentUser();
         }
     }, []);
+
+    // Renew the token while the user is actively working, so a long capture
+    // session never runs into the fixed token lifetime (see sessionKeepAlive.js).
+    useEffect(() => {
+        if (!state.user) return undefined;
+        let lastActivityAt = Date.now();
+        const markActive = () => { lastActivityAt = Date.now(); };
+        const events = ['keydown', 'pointerdown', 'input', 'scroll'];
+        events.forEach((e) => window.addEventListener(e, markActive, { passive: true, capture: true }));
+
+        const timer = setInterval(async () => {
+            if (!shouldRefresh({ expiresAt: getTokenExpiry(), lastActivityAt, now: Date.now() })) return;
+            try {
+                setToken((await refreshToken()).access_token);
+            } catch (err) {
+                // Expired already: the next save will prompt to log in again.
+                console.warn('[NCCRD] Could not renew session.', err);
+            }
+        }, CHECK_INTERVAL_MS);
+
+        return () => {
+            clearInterval(timer);
+            events.forEach((e) => window.removeEventListener(e, markActive, { capture: true }));
+        };
+    }, [state.user]);
 
     const login = async (email, password) => {
         const data = await apiLogin(email, password);

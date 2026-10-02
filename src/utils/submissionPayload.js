@@ -82,15 +82,21 @@ export const DEFAULT_COORDINATES = [30.374, -27.936];
  * fields expect: string region codes + a [lon, lat] pair.
  *
  * Some legacy (SQL-Server-migrated) rows store province/district as
- * vocabulary-term objects (e.g. `{ term: "North West" }`) instead of a
- * region code, and coordinates as a raw WKT string
- * (`"GEOMETRYCOLLECTION (POINT (24.27 -26.63))"`) instead of an array —
- * neither maps onto the region-code dropdowns, so they're dropped rather
- * than fed in as garbage. The user can re-pick the correct value from the
- * dropdown while editing.
+ * a list of vocabulary-term objects (e.g. `[{ term: "North West" }]`), and
+ * stored projects generally hold region *names* (the API converts form codes
+ * to names on save). Both are reduced to a plain string here. Coordinates
+ * stored as a raw WKT string (`"GEOMETRYCOLLECTION (POINT (24.27 -26.63))"`)
+ * don't map onto the form and fall back to the default point.
  */
 export function normalizeGeoLocation(geo) {
-    const asCode = (v) => (typeof v === 'string' ? v : '');
+    // Legacy rows may hold a list of vocabulary terms; keep the first term (a
+    // region *name*), which the form then maps to its code once the region
+    // lists load (see SubmissionForm).
+    const asCode = (v) => {
+        if (typeof v === 'string') return v;
+        if (Array.isArray(v) && typeof v[0]?.term === 'string') return v[0].term;
+        return '';
+    };
     return {
         type: 'Point',
         country: asCode(geo?.country) || 'ZAF',

@@ -24,6 +24,12 @@
   --text-muted: #64748b;
   --text-on-accent: #ffffff;
 
+  /* Data reports: single-series chart mark. The brand green is too muted for
+     a chart fill (reads gray); this step passes the dataviz chroma, lightness
+     and contrast checks against the white surface. */
+  --chart-series: #1f7a4d;
+  --chart-grid: #e2e8f0;
+
   --border-light: rgba(0, 0, 0, 0.08);
   --border-strong: rgba(28, 61, 47, 0.2);
 
@@ -523,4 +529,114 @@ p {
 
 .text-muted {
   color: var(--text-muted);
+}
+/* ───────────────────────────────────────────────────────────────────────────
+   Data reports (pages/Reports.jsx, components/report/*)
+   ─────────────────────────────────────────────────────────────────────────── */
+.reports-page { display: grid; gap: 1.5rem; }
+.report-back { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; color: var(--accent-primary); text-decoration: none; width: fit-content; }
+.report-header h1 { font-size: 2rem; margin: 0 0 0.5rem; text-wrap: balance; }
+.report-lede { color: var(--text-secondary); max-width: 68ch; margin: 0; }
+.report-scope { color: var(--text-muted); font-size: 0.85rem; margin: 0.5rem 0 0; font-variant-numeric: tabular-nums; }
+.report-note { color: var(--text-muted); font-size: 0.8rem; margin: 0.75rem 0 0; }
+.report-empty { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
+.report-error { padding: 1rem 1.25rem; border-left: 4px solid #ef4444; color: #b91c1c; }
+
+/* Report panels are read, not clicked: no lift on hover. */
+.report-panel:hover, .stat-tile:hover, .report-controls:hover { transform: none; box-shadow: var(--shadow-sm); border-color: var(--border-light); }
+
+.report-controls { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem; }
+.report-filters { display: flex; flex-wrap: wrap; gap: 1rem; }
+.report-filters > div { min-width: 12rem; margin-bottom: 0 !important; }
+.report-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.report-actions .btn { gap: 0.4rem; text-decoration: none; }
+
+.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-tile { display: flex; flex-direction: column; gap: 0.25rem; padding: 1.25rem; min-width: 0; }
+.stat-tile-label { font-size: 0.8rem; color: var(--text-muted); }
+.stat-tile-value { font-size: 1.6rem; font-weight: 600; color: var(--text-primary); }
+.stat-tile.is-hero .stat-tile-value { font-size: 3rem; line-height: 1.1; }
+.stat-tile-note { font-size: 0.75rem; color: var(--text-muted); }
+
+.report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 1.5rem; }
+.report-panel { padding: 1.5rem; min-width: 0; }
+.report-panel.is-wide { grid-column: 1 / -1; }
+.report-panel-title { font-size: 1.05rem; margin: 0 0 0.25rem; }
+.report-panel-subtitle { font-size: 0.8rem; color: var(--text-muted); margin: 0 0 1rem; }
+.report-panel-title + .bar-list, .report-panel-title + .completeness-list { margin-top: 1rem; }
+
+/* BarList: label | bar with value at its tip. Bars ≤ 24px, 4px rounded data end. */
+.bar-list, .completeness-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.35rem; }
+.bar-list-row { display: grid; grid-template-columns: minmax(7rem, 38%) 1fr; align-items: center; gap: 0.75rem; padding: 0.15rem 0.25rem; border-radius: 4px; }
+.bar-list-row:hover, .bar-list-row:focus-visible, .completeness-list li:hover, .completeness-list li:focus-visible { background: var(--bg-hover); outline: none; }
+.bar-list-label { font-size: 0.85rem; color: var(--text-secondary); overflow-wrap: anywhere; min-width: 0; }
+.bar-list-track { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.bar-list-bar { height: 14px; background: var(--chart-series); border-radius: 0 4px 4px 0; flex: none; }
+.bar-list-bar.is-muted { background: #cbd5e1; }
+.bar-list-value, .completeness-value { font-size: 0.8rem; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Completeness: label | meter | % | missing. Unfilled track is a light step of the same green. */
+.completeness-list li { display: grid; grid-template-columns: minmax(7rem, 34%) 1fr 3rem auto; align-items: center; gap: 0.75rem; padding: 0.15rem 0.25rem; border-radius: 4px; }
+.completeness-meter { height: 10px; background: rgba(31, 122, 77, 0.14); border-radius: 4px; overflow: hidden; }
+.completeness-meter > span { display: block; height: 100%; background: var(--chart-series); border-radius: 0 4px 4px 0; }
+.completeness-missing { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.chart-scroll { overflow-x: auto; }
+.chart-axis-text { font-size: 11px; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+.chart-value-text { font-size: 11px; font-weight: 600; fill: var(--text-primary); }
+.chart-column:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.chart-column:hover rect:first-child, .chart-column:focus rect:first-child { fill: var(--bg-hover); }
+
+.report-table-toggle { margin-top: 0.75rem; font-size: 0.85rem; }
+.report-table-toggle summary { cursor: pointer; color: var(--accent-primary); }
+.report-table { border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; width: 100%; font-variant-numeric: tabular-nums; }
+.report-table th, .report-table td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--chart-grid); white-space: nowrap; }
+.report-table th { color: var(--text-muted); font-weight: 500; }
+
+.report-quality { display: grid; gap: 1rem; margin-top: 2.5rem; }
+.report-quality h2 { font-size: 1.5rem; margin: 0; }
+
+@media (max-width: 640px) {
+  .completeness-list li { grid-template-columns: 1fr 3rem; }
+  .completeness-meter, .completeness-missing { grid-column: 1 / -1; }
+  .stat-tile.is-hero .stat-tile-value { font-size: 2.25rem; }
+}
+
+/* Printable summary: the page itself, minus navigation, controls and the
+   screen-only data-quality section. */
+@media print {
+  .top-banner, footer, .no-print { display: none !important; }
+  body { background: #fff; }
+  .reports-page { padding: 0 !important; gap: 1rem; }
+  .glass-panel { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+  .report-panel, .stat-tile { break-inside: avoid; }
+  .report-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .stat-tiles { grid-template-columns: repeat(3, 1fr); }
+  .chart-scroll { overflow: visible; }
+  .bar-list-bar, .completeness-meter > span, .chart-column path { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+/* Home: "Only my submissions" switch at the top of the filter sidebar. */
+.my-submissions-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 500; color: var(--accent-primary); padding: 0.6rem 0.75rem; margin-bottom: 0.75rem; border: 1px solid var(--accent-border); border-radius: var(--radius-sm); background: var(--accent-surface); cursor: pointer; }
+.my-submissions-toggle input { accent-color: var(--accent-primary); }
+
+/* Home layout: wraps to one column on narrow screens instead of scrolling sideways. */
+.home-action-cards { flex-wrap: wrap; }
+.home-action-cards > .glass-panel { min-width: min(100%, 16rem); }
+.home-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 1.5rem; }
+.home-sidebar { width: 300px; flex-shrink: 0; }
+
+@media (max-width: 900px) {
+  .home-directory { flex-direction: column; }
+  .home-sidebar { width: 100%; }
+  /* Stacked above the results, the filters scroll with the page. */
+  .home-sidebar-panel { position: static !important; max-height: none !important; }
+}
+.hero-title { font-size: clamp(2rem, 6vw, 3.2rem); text-wrap: balance; }
+
+@media (max-width: 640px) {
+  /* Let the hero grow with its text and leave room for the cards that
+     overlap its bottom edge (Home's action cards use margin-top: -5rem). */
+  .hero-container { min-height: 0; padding-block: 2rem 6rem; }
+  .hero-overlay { padding: 2rem 1.25rem; }
 }

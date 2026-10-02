@@ -14,6 +14,7 @@ const SubmissionForm = lazy(() => import('./pages/SubmissionForm'))
 const Login = lazy(() => import('./pages/Login'))
 const ChangePassword = lazy(() => import('./pages/ChangePassword'))
 const AdminCreateUser = lazy(() => import('./pages/AdminCreateUser'))
+const Reports = lazy(() => import('./pages/Reports'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="login" element={<Login />} />
           <Route path="change-password" element={<ChangePassword />} />
           <Route path="admin/users/new" element={<RequireAuth><AdminCreateUser /></RequireAuth>} />
+          <Route path="reports" element={<Reports />} />
           <Route path="submission/:id" element={<SubmissionDetails />} />
           <Route path="submission/new" element={<RequireAuth><SubmissionForm /></RequireAuth>} />
           <Route path="submission/edit/:id" element={<RequireAuth><SubmissionForm /></RequireAuth>} />

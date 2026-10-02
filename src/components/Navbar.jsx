@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, UserPlus, Activity } from 'lucide-react';
+import { Search, UserPlus, Activity, FolderOpen } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 
 const Navbar = () => {
@@ -16,6 +16,12 @@ const Navbar = () => {
      * Home page — scroll there directly.  Otherwise navigate to "/" first and
      * wait two animation frames for React to render the page before scrolling.
      */
+    /** Open the project list filtered to the user's own submissions (Home reads `?mine=1`). */
+    const handleMySubmissions = (e) => {
+        e.preventDefault();
+        navigate('/?mine=1');
+    };
+
     const handleSearchData = () => {
         const el = document.getElementById('project-directory');
         if (el) {
@@ -32,7 +38,7 @@ const Navbar = () => {
 
     return (
         <header className="top-banner">
-            <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <div className="logo-lockup">
                         <img src="/dffe-logo.jpg" alt="National Coat of Arms" style={{ height: '60px' }} />
@@ -42,11 +48,16 @@ const Navbar = () => {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem 2rem' }}>
                     <nav className="nav-links">
                         <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
                             <Search size={14} /> SEARCH DATA
                         </a>
+                        {isAuthenticated && (
+                            <a href="/?mine=1" className="nav-link" onClick={handleMySubmissions}>
+                                <FolderOpen size={14} /> MY SUBMISSIONS
+                            </a>
+                        )}
                         {hasPermission('create-submission') && (
                             <Link to="/submission/new" className="nav-link">
                                 <Activity size={14} /> NEW SUBMISSION

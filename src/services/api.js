@@ -66,13 +66,16 @@ async function _throwOnError(res) {
  * its error state and show a user-facing message.
  *
  * @param {object} params - Query parameters (q, intervention_measurement, …)
+ * @param {AbortSignal} [options.signal] - Cancels the request when a newer one supersedes it
  */
-export const getSubmissions = async (params = {}) => {
+export const getSubmissions = async (params = {}, { signal } = {}) => {
     const query = new URLSearchParams(params).toString();
     const res = await fetch(
-        `${API_BASE_URL}/submission/list_submission${query ? '?' + query : ''}`
+        `${API_BASE_URL}/submission/list_submission${query ? '?' + query : ''}`,
+        // Public, but sends the login when there is one: `mine=true` needs it.
+        { signal, headers: { ..._authHeaders() } }
     );
-    if (!res.ok) await _throwOnError(res);
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -202,6 +205,19 @@ export const login = async (email, password) => {
         body: JSON.stringify({ email, password }),
     });
     if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
+/**
+ * Swap the current, still-valid token for a fresh one so an active session
+ * never hits the fixed token lifetime. Backed by POST /auth/refresh.
+ */
+export const refreshToken = async () => {
+    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -339,4 +355,55 @@ export const uploadProgressReport = async (submissionId, file, notes) => {
     );
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data reports (public; take the same filters as getSubmissions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _reportQuery = (params) => {
+    const query = new URLSearchParams(params).toString();
+    return query ? `?${query}` : '';
+};
+
+/** Headline figures and breakdowns. Backed by GET /report/summary. */
+export const getReportSummary = async (params = {}, { signal } = {}) => {
+    const res = await fetch(`${API_BASE_URL}/report/summary${_reportQuery(params)}`, { signal });
+    if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
+/** Field completeness overall and per data source. Backed by GET /report/quality. */
+export const getReportQuality = async (params = {}, { signal } = {}) => {
+    const res = await fetch(`${API_BASE_URL}/report/quality${_reportQuery(params)}`, { signal });
+    if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
+/**
+ * URL that downloads the filtered projects (the API sends it as an
+ * attachment). Used as a plain link so the browser handles the download.
+ *
+ * @param {'xlsx'|'csv'} format
+ */
+export const reportExportUrl = (params = {}, format = 'xlsx') =>
+    `${API_BASE_URL}/report/export${_reportQuery({ ...params, format })}`;
+
+/**
+ * Download the filtered projects through fetch, so the request carries the
+ * login (needed for `mine=true`), then hand the file to the browser.
+ *
+ * @param {'xlsx'|'csv'} format
+ */
+export const downloadExport = async (params = {}, format = 'xlsx') => {
+    const res = await fetch(reportExportUrl(params, format), { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    const filename = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '')?.[1]
+        || `nccrd-projects.${format}`;
+    const url = URL.createObjectURL(await res.blob());
+    const link = Object.assign(document.createElement('a'), { href: url, download: filename });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
 };
