@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { uploadBulkSubmissions } from '../services/api';
+import { uploadBulkSubmissions, UPLOAD_TEMPLATE_URL } from '../services/api';
 import { Upload, UploadCloud, X, AlertTriangle, CheckCircle2, Activity } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,7 +97,10 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
                     Upload a consolidated <strong>.xlsx</strong> workbook with sheets:
                     &ldquo;General project details&rdquo;, &ldquo;Adaptation details&rdquo; (optional),
                     &ldquo;Mitigation details&rdquo; (optional). Row 1 must contain column headers.
-                    All rows are validated before any record is saved.
+                    All rows are validated before any record is saved.{' '}
+                    <a href={UPLOAD_TEMPLATE_URL} style={{ color: 'var(--accent-primary)', textDecoration: 'underline' }}>
+                        Download the template
+                    </a>{' '}with dropdown lists and instructions.
                 </p>
 
                 {/* Drop zone */}

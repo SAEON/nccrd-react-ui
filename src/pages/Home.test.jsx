@@ -8,6 +8,7 @@ vi.mock('../services/api', () => ({
     getSubmissions: vi.fn(),
     getFacets: vi.fn().mockResolvedValue({ province: ['Gauteng', 'National'] }),
     downloadExport: vi.fn(),
+    UPLOAD_TEMPLATE_URL: '/submission/upload_template',
 }));
 const auth = { isAuthenticated: false };
 vi.mock('../context/CurrentUserContext', () => ({

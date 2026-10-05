@@ -1,30 +1,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// InterventionBadge — coloured pill chip per intervention type (used by Home)
+// InterventionBadge — project type in the shared boxed .badge style, with a
+// colour dot carrying the type colour (shared with the map and charts,
+// utils/typeColors.js); the text keeps the badge's readable colour.
 // ─────────────────────────────────────────────────────────────────────────────
+import { typeColor } from '../utils/typeColors';
 
-/** Colour tokens for the per-submission intervention type badge. */
-const INTERVENTION_BADGE = {
-    Mitigation: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-    Adaptation: { color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
-    'Cross Cutting': { color: '#818cf8', bg: 'rgba(129,140,248,0.12)' },
-};
-
-const InterventionBadge = ({ type }) => {
-    const style = INTERVENTION_BADGE[type] || { color: 'var(--text-muted)', bg: 'transparent' };
-    return (
-        <span style={{
-            display: 'inline-block',
-            padding: '0.15rem 0.6rem',
-            borderRadius: '9999px',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            color: style.color,
-            background: style.bg,
-            border: `1px solid ${style.color}40`,
-        }}>
-            {type || 'General'}
-        </span>
-    );
-};
+const InterventionBadge = ({ type }) => (
+    <span className="badge type-badge">
+        <span className="type-dot" style={{ background: typeColor(type) }} aria-hidden="true" />
+        {type || 'General'}
+    </span>
+);
 
 export default InterventionBadge;

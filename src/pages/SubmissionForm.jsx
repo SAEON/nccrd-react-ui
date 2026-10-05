@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Activity, AlertTriangle, FileDown, Paperclip, X, Histo
 import { sanitizePayload, normalizeGeoLocation } from '../utils/submissionPayload';
 import { draftKey, loadDraft, saveDraft, clearDraft } from '../utils/draftStorage';
 import ReauthModal from '../components/ReauthModal';
+import { canEditSubmission, isCurator, reviewState } from '../utils/reviewStatus';
 import { Field, TextInput, NestedField, RegionSelect, VocabularySelect, SectionHeading } from '../components/form/FormFields';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,7 +20,6 @@ const SubmissionForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEdit = !!id;
-    const requiredPermission = isEdit ? 'update-submission' : 'create-submission';
     const { user, hasPermission, loading: authLoading } = useCurrentUser();
 
     const [loading, setLoading] = useState(isEdit);
@@ -36,6 +36,7 @@ const SubmissionForm = () => {
     const baselineRef = useRef(null);                       // formData as loaded, JSON
     const [showReauth, setShowReauth] = useState(false);
     const [conflict, setConflict] = useState(null);         // 409 detail
+    const [loadedState, setLoadedState] = useState(null);   // review state when opened
 
     // ── Progress reports (MRV) — staged locally, uploaded after the
     // submission itself is saved (they're children of it via submission_id,
@@ -192,6 +193,7 @@ const SubmissionForm = () => {
                 if (data.end_date) data.end_date = new Date(data.end_date).toISOString().split('T')[0];
 
                 setBaseUpdatedate(data.updatedate ?? null);
+                setLoadedState(reviewState(data));
                 setFormData({
                     ...data,
                     // The API returns nested records as "mitigation"/"adaptation";
@@ -351,14 +353,16 @@ const SubmissionForm = () => {
     // Backend already enforces this (403) — this just avoids a confusing
     // dead-end submit for a user whose entry point was reachable directly
     // (e.g. pasted URL) rather than via a hidden button.
-    if (!hasPermission(requiredPermission)) return (
+    // Owners edit their own projects; curators edit anyone's.
+    const allowed = isEdit ? canEditSubmission(formData, user, hasPermission) : hasPermission('create-submission');
+    if (!allowed) return (
         <div className="container" style={{ paddingTop: '2rem' }}>
             <Link to="/" className="btn btn-outline mb-6" style={{ display: 'inline-flex', padding: '0.4rem 1rem', borderRadius: 'var(--radius-full)' }}>
                 <ArrowLeft size={16} /> Back to Projects
             </Link>
             <div className="glass-panel" style={{ padding: '2rem', borderLeft: '4px solid #ef4444' }}>
                 <h3 style={{ color: '#b91c1c' }}>Access Denied</h3>
-                <p>You don&apos;t have permission to {isEdit ? 'edit' : 'create'} submissions.</p>
+                <p>{isEdit ? 'You can only edit your own submissions.' : 'You don’t have permission to create submissions.'}</p>
             </div>
         </div>
     );
@@ -384,6 +388,13 @@ const SubmissionForm = () => {
                 <h1 style={{ marginBottom: '1.5rem' }}>{isEdit ? 'Edit Project' : 'Add New Project'}</h1>
 
                 {/* Error banner */}
+                {isEdit && loadedState === 'published' && !isCurator(hasPermission) && (
+                    <div role="note" className="review-note review-note-awaiting_review" style={{ marginTop: 0 }}>
+                        This project is published. Saving your changes sends it back for review, and it is hidden from the
+                        public site until a reviewer accepts it again.
+                    </div>
+                )}
+
                 {draftOffer && (
                     <div role="status" style={{
                         display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
@@ -610,6 +621,12 @@ const SubmissionForm = () => {
                                 onChange={handleChange}
                             >
                                 <option value="">-- Select --</option>
+                                {/* Legacy NCCRD categories (restored from the old system) */}
+                                <option value="Government">Government</option>
+                                <option value="Domestic">Domestic</option>
+                                <option value="International grant">International grant</option>
+                                <option value="International loan">International loan</option>
+                                <option value="Private">Private</option>
                                 <option value="Grant">Grant</option>
                                 <option value="Loan">Loan</option>
                                 <option value="Own Funding">Own Funding</option>

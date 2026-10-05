@@ -1,10 +1,32 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, UserPlus, Activity, FolderOpen } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Search, UserPlus, Activity, FolderOpen, ClipboardCheck, BarChart3, UserCheck } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
+import { getReviewCounts, getRegistrations } from '../services/api';
 
 const Navbar = () => {
     const navigate = useNavigate();
     const { user, hasPermission, isAuthenticated, logout } = useCurrentUser();
+    const isReviewer = hasPermission('validate-submission');
+    const [awaitingReview, setAwaitingReview] = useState(null);
+    const isAdmin = hasPermission('assign-role');
+    const [pendingRequests, setPendingRequests] = useState(null);
+
+    // Admins see how many account requests are waiting.
+    useEffect(() => {
+        if (!isAdmin) return;
+        getRegistrations('pending')
+            .then((list) => setPendingRequests(list.length))
+            .catch((err) => console.warn('[NCCRD] Could not load account requests.', err));
+    }, [isAdmin]);
+
+    // Reviewers see how many submissions are waiting.
+    useEffect(() => {
+        if (!isReviewer) return;
+        getReviewCounts()
+            .then((counts) => setAwaitingReview(counts.awaiting_review))
+            .catch((err) => console.warn('[NCCRD] Could not load review counts.', err));
+    }, [isReviewer]);
 
     const handleLogout = () => {
         logout();
@@ -53,6 +75,9 @@ const Navbar = () => {
                         <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
                             <Search size={14} /> SEARCH DATA
                         </a>
+                        <Link to="/reports" className="nav-link">
+                            <BarChart3 size={14} /> DATA REPORTS
+                        </Link>
                         {isAuthenticated && (
                             <a href="/?mine=1" className="nav-link" onClick={handleMySubmissions}>
                                 <FolderOpen size={14} /> MY SUBMISSIONS
@@ -61,6 +86,18 @@ const Navbar = () => {
                         {hasPermission('create-submission') && (
                             <Link to="/submission/new" className="nav-link">
                                 <Activity size={14} /> NEW SUBMISSION
+                            </Link>
+                        )}
+                        {isReviewer && (
+                            <Link to="/review" className="nav-link">
+                                <ClipboardCheck size={14} /> REVIEW
+                                {awaitingReview > 0 && <span className="nav-count" aria-label={`${awaitingReview} waiting`}>{awaitingReview}</span>}
+                            </Link>
+                        )}
+                        {isAdmin && (
+                            <Link to="/admin/registrations" className="nav-link">
+                                <UserCheck size={14} /> REQUESTS
+                                {pendingRequests > 0 && <span className="nav-count" aria-label={`${pendingRequests} waiting`}>{pendingRequests}</span>}
                             </Link>
                         )}
                         {hasPermission('assign-role') && (

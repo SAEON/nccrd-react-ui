@@ -13,8 +13,15 @@ const SUMMARY = {
     mitigation_sectors: [{ label: 'Energy', count: 10 }],
     adaptation_sectors: [],
     hazards: [{ label: 'Drought', count: 46 }],
-    by_start_year: [{ year: 2001, count: 93 }, { year: 2003, count: 5 }],
-    start_year_unknown: 1994,
+    under_way_by_year: { series: ['Mitigation', 'Adaptation', 'Cross Cutting'], rows: [
+        { label: 2001, values: { Mitigation: 50, Adaptation: 40, 'Cross Cutting': 3 } },
+        { label: 2003, values: { Mitigation: 5, Adaptation: 0, 'Cross Cutting': 0 } },
+    ] },
+    under_way_unknown: 1994,
+    status_by_type: { series: ['Mitigation', 'Adaptation', 'Cross Cutting'], rows: [{ label: 'Completed', values: { Mitigation: 600, Adaptation: 44, 'Cross Cutting': 0 } }] },
+    funding_type_by_type: { series: ['Mitigation', 'Adaptation', 'Cross Cutting'], rows: [] },
+    budget_ranges: { series: ['Mitigation', 'Adaptation', 'Cross Cutting'], rows: [{ label: 'R1m - R5m', values: { Mitigation: 3, Adaptation: 2, 'Cross Cutting': 0 } }] },
+    sector_budget: { mitigation: [{ label: 'Energy', amount: 86000000000, projects: 3 }], adaptation: [] },
     funding: { total_amount: 122850934970, median_amount: 1136004, projects_with_amount: 179 },
 };
 const QUALITY = {
@@ -32,8 +39,11 @@ vi.mock('../services/api', () => ({
     getFacets: vi.fn().mockResolvedValue({ province: ['Gauteng', 'National'] }),
     getReportSummary: vi.fn(),
     getReportQuality: vi.fn(),
+    getReportLocations: vi.fn().mockResolvedValue({ projects: [], without_location: 0 }),
     reportExportUrl: (params, format) => `/report/export?${new URLSearchParams({ ...params, format })}`,
 }));
+// Leaflet needs a real browser; the map has its own checks in the screenshot run.
+vi.mock('../components/ProjectMap', () => ({ default: () => <div data-testid="project-map" /> }));
 
 describe('Reports', () => {
     beforeEach(async () => {
@@ -48,6 +58,9 @@ describe('Reports', () => {
         expect(await screen.findByText('3,199')).toBeInTheDocument();
         expect(screen.getByLabelText(/South Africa \(National\): 75 projects/)).toBeInTheDocument();
         expect(screen.getByText('1,994 projects have no start date and are not shown.')).toBeInTheDocument();
+        expect(screen.getByLabelText('Completed, Mitigation: 600')).toBeInTheDocument();
+        expect(screen.getByText('From the 3 mitigation projects that report an actual budget amount.')).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: /Download data/ }).length).toBeGreaterThan(5);
         expect(screen.getByText(/294 titles are shared/)).toBeInTheDocument();
     });
 

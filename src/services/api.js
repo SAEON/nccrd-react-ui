@@ -94,8 +94,36 @@ export const getFacets = async () => {
  * @param {string} id - UUID of the submission
  */
 export const getSubmissionById = async (id) => {
-    const res = await fetch(`${API_BASE_URL}/submission/read_submission/${id}`);
-    if (!res.ok) await _throwOnError(res);
+    // Sends the login when there is one: unpublished projects are visible to
+    // their owner and to reviewers only.
+    const res = await fetch(`${API_BASE_URL}/submission/read_submission/${id}`, {
+        headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/**
+ * Record a review decision. Backed by POST /submission/{id}/review
+ * (needs the validate-submission permission).
+ *
+ * @param {'Accepted'|'Not accepted'} decision
+ * @param {string} [comments] - shown to the submitter; required for 'Not accepted'
+ */
+export const reviewSubmission = async (id, decision, comments) => {
+    const res = await fetch(`${API_BASE_URL}/submission/${id}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ..._authHeaders() },
+        body: JSON.stringify({ decision, comments }),
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** Submissions per review state, for the review queue. GET /submission/review/counts. */
+export const getReviewCounts = async () => {
+    const res = await fetch(`${API_BASE_URL}/submission/review/counts`, { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
@@ -373,12 +401,28 @@ export const getReportSummary = async (params = {}, { signal } = {}) => {
     return res.json();
 };
 
+/**
+ * Map points for the filtered projects: { projects: [{id, title, type, points}],
+ * without_location }. Backed by GET /report/locations. Sends the login so the
+ * "mine" filter works here too.
+ */
+export const getReportLocations = async (params = {}, { signal } = {}) => {
+    const res = await fetch(`${API_BASE_URL}/report/locations${_reportQuery(params)}`, {
+        signal, headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
 /** Field completeness overall and per data source. Backed by GET /report/quality. */
 export const getReportQuality = async (params = {}, { signal } = {}) => {
     const res = await fetch(`${API_BASE_URL}/report/quality${_reportQuery(params)}`, { signal });
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
+
+/** The offline-submission workbook (public). Backed by GET /submission/upload_template. */
+export const UPLOAD_TEMPLATE_URL = `${API_BASE_URL}/submission/upload_template`;
 
 /**
  * URL that downloads the filtered projects (the API sends it as an
@@ -406,4 +450,46 @@ export const downloadExport = async (params = {}, format = 'xlsx') => {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Self sign-up (POST /auth/register) and its admin review (/rbac/registrations)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Request an account: { name, email, organisation, password, note }. Returns { detail }. */
+export const registerAccount = async (body) => {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
+/** Account requests by status ('pending' | 'approved' | 'rejected'); needs assign-role. */
+export const getRegistrations = async (status = 'pending') => {
+    const res = await fetch(`${API_BASE_URL}/rbac/registrations?status=${status}`, { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** Approve a request, granting `roleId` on the current tenant. */
+export const approveRegistration = async (userId, roleId) => {
+    const res = await fetch(`${API_BASE_URL}/rbac/registrations/${userId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ..._authHeaders() },
+        body: JSON.stringify({ role_id: roleId }),
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+export const rejectRegistration = async (userId) => {
+    const res = await fetch(`${API_BASE_URL}/rbac/registrations/${userId}/reject`, {
+        method: 'POST',
+        headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
 };

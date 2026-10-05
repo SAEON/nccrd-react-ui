@@ -515,6 +515,11 @@ p {
   margin-bottom: 1rem;
 }
 
+/* Used across the forms (login, change password, admin) but was never defined. */
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
 .mb-8 {
   margin-bottom: 2rem;
 }
@@ -640,3 +645,100 @@ p {
   .hero-container { min-height: 0; padding-block: 2rem 6rem; }
   .hero-overlay { padding: 2rem 1.25rem; }
 }
+
+/* Review states (components/StatusBadge.jsx). Status colours are reserved for
+   these and always carry an icon + label. */
+.status-badge { display: inline-flex; align-items: center; gap: 0.3rem; }
+.status-good { background: rgba(22, 163, 74, 0.1); color: #15803d; }
+.status-warning { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+.status-critical { background: rgba(220, 38, 38, 0.1); color: #b91c1c; }
+.status-neutral { background: #f1f5f9; color: #475569; }
+
+/* Project page: why an unpublished project isn't public, and the reviewer panel. */
+.review-note { padding: 0.9rem 1.25rem; margin-block: 1rem; border-left: 4px solid; font-size: 0.92rem; color: var(--text-secondary); }
+.review-note:hover, .review-panel:hover { transform: none; box-shadow: var(--shadow-sm); }
+.review-note-published { border-left-color: #16a34a; color: #15803d; }
+.review-note-awaiting_review { border-left-color: #d97706; }
+.review-note-not_accepted { border-left-color: #dc2626; }
+.review-note-draft { border-left-color: #94a3b8; }
+.review-comments { margin: 0.75rem 0 0; padding: 0.6rem 0.9rem; background: var(--bg-hover); border-radius: var(--radius-sm); white-space: pre-wrap; color: var(--text-primary); }
+.review-comments footer { margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-muted); }
+.review-panel { display: grid; gap: 0.6rem; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid var(--accent-primary); }
+.review-panel .btn { gap: 0.4rem; }
+
+/* Review queue (pages/Review.jsx) */
+.reviews-page { display: grid; gap: 1.25rem; }
+.review-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.review-tab { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border: 1px solid var(--border-light); border-radius: var(--radius-full); background: var(--bg-secondary); color: var(--text-secondary); font-size: 0.9rem; cursor: pointer; }
+.review-tab.is-active { background: var(--accent-primary); border-color: var(--accent-primary); color: var(--text-on-accent); }
+.review-tab:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.review-tab-count { font-size: 0.8rem; font-variant-numeric: tabular-nums; opacity: 0.85; }
+.review-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.review-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; text-decoration: none; color: inherit; }
+.review-row-main { display: grid; gap: 0.35rem; min-width: 0; }
+.review-row-main strong { color: var(--text-primary); overflow-wrap: anywhere; }
+.review-row-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.review-row-meta { font-size: 0.8rem; color: var(--text-muted); }
+.nav-count { margin-left: 0.35rem; padding: 0 0.4rem; border-radius: var(--radius-full); background: #d97706; color: #fff; font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+
+/* Information pages (pages/InfoPage.jsx): a reading column. */
+.info-page { max-width: 820px; padding-block: 2.5rem 4rem; color: var(--text-secondary); line-height: 1.7; }
+.info-page h1 { font-size: 2.2rem; color: var(--text-primary); margin: 0 0 0.5rem; text-wrap: balance; }
+.info-page h2 { font-size: 1.35rem; color: var(--text-primary); margin: 2rem 0 0.5rem; text-wrap: balance; }
+.info-page h3 { font-size: 1.1rem; color: var(--text-primary); margin: 1.5rem 0 0.4rem; }
+.info-page h4 { font-size: 0.95rem; color: var(--text-primary); margin: 1.25rem 0 0.25rem; }
+.info-page p, .info-page li { max-width: 70ch; }
+.info-page p, .info-page ul, .info-page ol { margin: 0 0 1rem; }
+.info-page ul, .info-page ol { padding-left: 1.4rem; display: grid; gap: 0.35rem; }
+.info-page a:not(.btn) { color: var(--accent-primary); text-decoration: underline; }
+.info-page .btn { text-decoration: none; }
+.info-subtitle { color: var(--text-muted); font-size: 1rem; margin: 0 0 1.5rem; }
+
+/* Site footer (components/SiteFooter.jsx) */
+.site-footer { background: var(--accent-primary); color: rgba(255, 255, 255, 0.85); padding-block: 2.5rem 1.25rem; margin-top: 2rem; }
+.site-footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 2rem; }
+.site-footer h2 { font-size: 1rem; color: #fff; margin: 0 0 0.75rem; }
+.site-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.site-footer a { color: rgba(255, 255, 255, 0.85); text-decoration: none; font-size: 0.9rem; }
+.site-footer a:hover, .site-footer a:focus-visible { color: #fff; text-decoration: underline; }
+.site-footer p { margin: 0 0 0.75rem; font-size: 0.9rem; color: rgba(255, 255, 255, 0.75); }
+.site-footer .site-footer-address { color: #fff; }
+.site-footer-copy { text-align: center; color: rgba(255, 255, 255, 0.7) !important; font-size: 0.8rem !important; margin: 2rem 0 0 !important; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.15); }
+@media print { .site-footer { display: none; } }
+
+/* Colour dot for project types: inside the type badge (components/InterventionBadge.jsx) and the map/chart legends. */
+.type-badge { gap: 0.35rem; }
+.type-dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex: none; box-shadow: 0 0 0 1.5px #fff; }
+
+/* Project map (components/ProjectMap.jsx) */
+.project-map { display: grid; gap: 0.75rem; }
+.project-map-frame { border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-light); }
+.project-map-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+.project-map-key { display: inline-flex; align-items: center; gap: 0.4rem; }
+.project-map-count { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.project-map .leaflet-popup-content a { color: var(--accent-primary); }
+@media print { .project-map-frame { break-inside: avoid; } }
+
+/* Home: List / Map switch above the results. */
+.view-toggle { display: inline-flex; border: 1px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; }
+.view-toggle button { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.8rem; border: 0; background: var(--bg-secondary); color: var(--text-secondary); font-size: 0.85rem; cursor: pointer; }
+.view-toggle button + button { border-left: 1px solid var(--border-light); }
+.view-toggle button.is-active { background: var(--accent-primary); color: var(--text-on-accent); }
+.view-toggle button:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: -2px; }
+
+/* By-type charts (components/report/Stacked*.jsx) */
+.series-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
+.stacked-bar { display: flex; gap: 2px; height: 14px; flex: none; }
+.stacked-segment { min-width: 2px; height: 100%; }
+.stacked-segment:last-child { border-radius: 0 4px 4px 0; }
+.stacked-segment:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 1px; }
+.panel-download { justify-self: start; display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.75rem; padding: 0; border: 0; background: none; color: var(--accent-primary); font-size: 0.8rem; cursor: pointer; }
+.panel-download:hover, .panel-download:focus-visible { text-decoration: underline; }
+
+/* Round icon button (result-card download), matching the card's view chevron. */
+.icon-button { border-radius: var(--radius-full); padding: 0.5rem; }
+
+/* Account requests (pages/AdminRegistrations.jsx) */
+.registration-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; }
+.registration-row:hover { transform: none; }
+.registration-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
