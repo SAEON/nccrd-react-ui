@@ -15,10 +15,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
-import { getFacets, getReportSummary, getReportQuality, reportExportUrl } from '../services/api';
+import { getFacets, getReportSummary, getReportQuality, getReportLocations, reportExportUrl } from '../services/api';
 import FacetSelect from '../components/FacetSelect';
 import BarList from '../components/report/BarList';
-import YearColumns from '../components/report/YearColumns';
+import StackedBars from '../components/report/StackedBars';
+import StackedColumns from '../components/report/StackedColumns';
+import { downloadCsv, listCsv, byTypeCsv } from '../utils/csv';
+import ProjectMap from '../components/ProjectMap';
 
 const TYPES = ['Mitigation', 'Adaptation', 'Cross Cutting'];
 const PROVINCE_LABELS = { National: 'South Africa (National)' };
@@ -27,11 +30,21 @@ const zar = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR',
 const countOf = (rows, label) => rows?.find((r) => r.label === label)?.count ?? 0;
 const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
 
-const Panel = ({ title, subtitle, children, wide = false }) => (
+/** A chart panel; `csv` (rows incl. header) adds a "Download data" link for its numbers. */
+const Panel = ({ title, subtitle, children, wide = false, csv }) => (
     <section className={`glass-panel report-panel${wide ? ' is-wide' : ''}`}>
         <h3 className="report-panel-title">{title}</h3>
         {subtitle && <p className="report-panel-subtitle">{subtitle}</p>}
         {children}
+        {csv && (
+            <button
+                type="button"
+                className="panel-download no-print"
+                onClick={() => downloadCsv(`nccrd-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.csv`, csv)}
+            >
+                <Download size={13} /> Download data (CSV)
+            </button>
+        )}
     </section>
 );
 
@@ -49,6 +62,7 @@ const Reports = () => {
     const [provinces, setProvinces] = useState([]);
     const [summary, setSummary] = useState(null);
     const [quality, setQuality] = useState(null);
+    const [locations, setLocations] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -71,8 +85,9 @@ const Reports = () => {
         Promise.all([
             getReportSummary(params, { signal: controller.signal }),
             getReportQuality(params, { signal: controller.signal }),
+            getReportLocations(params, { signal: controller.signal }),
         ])
-            .then(([s, q]) => { setSummary(s); setQuality(q); setLoading(false); })
+            .then(([s, q, l]) => { setSummary(s); setQuality(q); setLocations(l); setLoading(false); })
             .catch((err) => {
                 if (err.name === 'AbortError') return;
                 setError('Could not load the reports. Check that the API is running and try again.');
@@ -162,29 +177,62 @@ const Reports = () => {
 
                     {/* ── Breakdowns ─────────────────────────────────────── */}
                     <div className="report-grid">
-                        <Panel title="Projects by province" subtitle="A project in several provinces counts in each.">
+                        {locations && (
+                            <Panel title="Project locations" subtitle="One dot per project location. Hover for the title, click to open the project." wide>
+                                <ProjectMap projects={locations.projects} withoutLocation={locations.without_location} />
+                            </Panel>
+                        )}
+                        <Panel
+                            title="Projects under way each year"
+                            subtitle="Counted in every year from start to end. Projects without an end date count until this year unless completed or cancelled."
+                            wide
+                            csv={byTypeCsv('Year', summary.under_way_by_year)}
+                        >
+                            <StackedColumns data={summary.under_way_by_year} />
+                            {summary.under_way_unknown > 0 && (
+                                <p className="report-note">{summary.under_way_unknown.toLocaleString()} projects have no start date and are not shown.</p>
+                            )}
+                        </Panel>
+                        <Panel
+                            title="Projects by province"
+                            subtitle="A project in several provinces counts in each."
+                            csv={listCsv('Province', 'Projects', summary.by_province)}
+                        >
                             <BarList
                                 rows={summary.by_province.map((r) => ({ ...r, label: PROVINCE_LABELS[r.label] ?? r.label }))}
                                 total={total}
                             />
                         </Panel>
-                        <Panel title="Implementation status">
-                            <BarList rows={summary.by_status} total={total} />
+                        <Panel title="Implementation status" csv={byTypeCsv('Status', summary.status_by_type)}>
+                            <StackedBars data={summary.status_by_type} unspecifiedText="have no implementation status" />
                         </Panel>
-                        <Panel title="Mitigation sectors" subtitle="Top 12, mitigation and cross-cutting projects.">
+                        <Panel title="Estimated budget" subtitle="Budget range given when the project was captured." csv={byTypeCsv('Budget range', summary.budget_ranges)}>
+                            <StackedBars data={summary.budget_ranges} unspecifiedText="have no budget range recorded" />
+                        </Panel>
+                        <Panel title="Funding type" csv={byTypeCsv('Funding type', summary.funding_type_by_type)}>
+                            <StackedBars data={summary.funding_type_by_type} unspecifiedText="have no funding type recorded" />
+                        </Panel>
+                        <Panel title="Mitigation sectors" subtitle="Top 12, mitigation and cross-cutting projects." csv={listCsv('Sector', 'Projects', summary.mitigation_sectors)}>
                             <BarList rows={summary.mitigation_sectors} />
                         </Panel>
-                        <Panel title="Adaptation sectors" subtitle="Top 12, adaptation and cross-cutting projects.">
+                        <Panel title="Adaptation sectors" subtitle="Top 12, adaptation and cross-cutting projects." csv={listCsv('Sector', 'Projects', summary.adaptation_sectors)}>
                             <BarList rows={summary.adaptation_sectors} />
                         </Panel>
-                        <Panel title="Climate hazards addressed" subtitle="Adaptation projects; one project can address several.">
+                        {['mitigation', 'adaptation'].map((kind) => {
+                            const rows = summary.sector_budget[kind];
+                            return (
+                                <Panel
+                                    key={kind}
+                                    title={`Recorded budget by ${kind} sector`}
+                                    subtitle={`From the ${rows.reduce((n, r) => n + r.projects, 0).toLocaleString()} ${kind} projects that report an actual budget amount.`}
+                                    csv={[['Sector', 'Budget (ZAR)', 'Projects'], ...rows.map((r) => [r.label, r.amount, r.projects])]}
+                                >
+                                    <BarList rows={rows.map((r) => ({ label: r.label, count: r.amount }))} format={(n) => zar.format(n)} />
+                                </Panel>
+                            );
+                        })}
+                        <Panel title="Climate hazards addressed" subtitle="Adaptation projects; one project can address several." csv={listCsv('Hazard', 'Projects', summary.hazards)}>
                             <BarList rows={summary.hazards} />
-                        </Panel>
-                        <Panel title="Funding type">
-                            <BarList rows={summary.by_funding_type} total={total} />
-                        </Panel>
-                        <Panel title="Projects by start year" wide>
-                            <YearColumns data={summary.by_start_year} unknown={summary.start_year_unknown} />
                         </Panel>
                     </div>
 

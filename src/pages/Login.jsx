@@ -69,7 +69,7 @@ const Login = () => {
                 </button>
             </form>
             <p style={{ marginTop: '1.5rem', fontSize: '0.85rem' }}>
-                <Link to="/">Back to home</Link>
+                No account yet? <Link to="/register">Request one</Link> · <Link to="/">Back to home</Link>
             </p>
         </div>
     );

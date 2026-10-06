@@ -6,7 +6,7 @@
 
 const NOT_SPECIFIED = 'Not specified';
 
-const BarList = ({ rows = [], total, emptyText = 'No data for this selection.' }) => {
+const BarList = ({ rows = [], total, emptyText = 'No data for this selection.', format }) => {
     if (!rows.length) return <p className="report-empty">{emptyText}</p>;
     const max = Math.max(...rows.map((r) => r.count));
 
@@ -14,8 +14,10 @@ const BarList = ({ rows = [], total, emptyText = 'No data for this selection.' }
         <ul className="bar-list">
             {rows.map(({ label, count }) => {
                 const share = total ? Math.round((count / total) * 100) : null;
-                const description = `${label}: ${count.toLocaleString()} project${count === 1 ? '' : 's'}`
-                    + (share !== null ? ` (${share}% of projects)` : '');
+                const description = format
+                    ? `${label}: ${format(count)}`
+                    : `${label}: ${count.toLocaleString()} project${count === 1 ? '' : 's'}`
+                        + (share !== null ? ` (${share}% of projects)` : '');
                 return (
                     <li key={label} className="bar-list-row" tabIndex={0} title={description} aria-label={description}>
                         <span className="bar-list-label">{label}</span>
@@ -25,7 +27,7 @@ const BarList = ({ rows = [], total, emptyText = 'No data for this selection.' }
                                 // Reserve room for the value label so the longest bar's number stays inside the panel.
                                 style={{ width: `max(2px, calc((100% - 4rem) * ${count / max}))` }}
                             />
-                            <span className="bar-list-value">{count.toLocaleString()}</span>
+                            <span className="bar-list-value">{format ? format(count) : count.toLocaleString()}</span>
                         </span>
                     </li>
                 );

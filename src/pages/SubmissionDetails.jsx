@@ -3,6 +3,11 @@ import { useState, useEffect } from 'react';
 import { getSubmissionById, deleteSubmission, API_BASE_URL } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { resolveValue } from '../utils/resolveValue';
+import { canEditSubmission } from '../utils/reviewStatus';
+import StatusBadge from '../components/StatusBadge';
+import InterventionBadge from '../components/InterventionBadge';
+import DownloadProjectButton from '../components/DownloadProjectButton';
+import { ReviewPanel, ReviewStatusNote } from '../components/ReviewPanel';
 import {
     ArrowLeft, Clock, Banknote, MapPin, Building,
     Target, Activity, Edit2, Trash2, Mail,
@@ -66,7 +71,7 @@ const SubmissionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { hasPermission } = useCurrentUser();
+    const { user, hasPermission } = useCurrentUser();
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -74,6 +79,7 @@ const SubmissionDetails = () => {
     // dismissible, and read once so a later refresh of this same page
     // (or navigating away and back) doesn't keep re-showing it.
     const [justSaved, setJustSaved] = useState(location.state?.justSaved ?? null);
+    const [reviewed, setReviewed] = useState(null);   // decision just recorded here
 
     const loadProject = async () => {
         setLoading(true);
@@ -83,7 +89,9 @@ const SubmissionDetails = () => {
             setProject(data);
         } catch (err) {
             console.error(err);
-            setError('Failed to load this project. Ensure the database connection is active.');
+            setError(err.status === 404
+                ? 'This project doesn’t exist, or it hasn’t been published yet. If it’s yours, log in to see it.'
+                : 'Failed to load this project. Ensure the database connection is active.');
         } finally {
             setLoading(false);
         }
@@ -143,6 +151,7 @@ const SubmissionDetails = () => {
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <CheckCircle size={18} />
                         {justSaved === 'created' ? 'Submission created successfully.' : 'Submission updated successfully.'}
+                        {project.submission_status === 'Pending' && ' It will be public once a reviewer accepts it.'}
                     </span>
                     <button
                         type="button"
@@ -168,6 +177,21 @@ const SubmissionDetails = () => {
             </div>
 
 
+            {reviewed && (
+                <div role="status" className="glass-panel review-note review-note-published">
+                    {reviewed === 'Accepted'
+                        ? 'Accepted. The project is now public.'
+                        : 'Marked not accepted. The submitter will see your comments on this page.'}
+                </div>
+            )}
+            <ReviewStatusNote submission={project} />
+            {hasPermission('validate-submission') && (
+                <ReviewPanel
+                    submission={project}
+                    onReviewed={(decision) => { setReviewed(decision); loadProject(); }}
+                />
+            )}
+
             <div className="glass-panel animate-fade-in" style={{ padding: 0, overflow: 'hidden' }}>
 
                 {/* ── Header ──────────────────────────────────────────────── */}
@@ -175,16 +199,17 @@ const SubmissionDetails = () => {
                     <div className="flex justify-between items-start mb-4">
                         {/* Status badges */}
                         <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
-                            <span className="badge badge-success">{project.submission_status || 'Pending'}</span>
-                            <span className="badge">{project.intervention_measurement || 'General'}</span>
+                            <StatusBadge submission={project} />
+                            <InterventionBadge type={project.intervention_measurement} />
                             {project.implementation_status && (
                                 <span className="badge">{project.implementation_status}</span>
                             )}
                         </div>
 
                         {/* Action buttons — grouped top-right (Phase 2) */}
-                        <div className="flex gap-2" style={{ flexShrink: 0 }}>
-                            {hasPermission('update-submission') && (
+                        <div className="flex gap-2" style={{ flexShrink: 0, flexWrap: 'wrap' }}>
+                            <DownloadProjectButton submission={project} />
+                            {canEditSubmission(project, user, hasPermission) && (
                                 <Link
                                     to={`/submission/edit/${id}`}
                                     className="btn btn-outline flex items-center gap-2"

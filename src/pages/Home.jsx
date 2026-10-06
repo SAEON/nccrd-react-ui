@@ -32,21 +32,27 @@
  *   ✓ Fully copy-pasteable — no external state managers or new CSS required.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getSubmissions, getFacets, downloadExport } from '../services/api';
+import { getSubmissions, getFacets, downloadExport, getReportLocations, UPLOAD_TEMPLATE_URL } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import Navbar from '../components/Navbar';
 import InterventionBadge from '../components/InterventionBadge';
+import StatusBadge from '../components/StatusBadge';
+import DownloadProjectButton from '../components/DownloadProjectButton';
 import FilterSection from '../components/FilterSection';
 import FacetSelect from '../components/FacetSelect';
 import BulkUploadModal from '../components/BulkUploadModal';
 import { SORT_OPTIONS, DEFAULT_SORT, sortSubmissions } from '../utils/sortSubmissions';
 import { buildQueryParams } from '../utils/submissionQuery';
+import { BUDGET_RANGES } from '../utils/budgetRanges';
+
+// Leaflet is only fetched when someone opens the map view.
+const ProjectMap = lazy(() => import('../components/ProjectMap'));
 import {
     Search, ChevronRight, Activity, Leaf, FileText,
     UploadCloud, Compass, Database, Zap, GitMerge,
-    X, Upload, Filter, Download,
+    X, Upload, Filter, Download, List, Map as MapIcon,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,17 +81,20 @@ const EMPTY_FILTERS = {
     province: '',     // JSONB containment filter on the backend
     implementation_status: '',     // facetised — distinct values from Submission table
     funding_type: '',     // facetised — distinct values from Submission table
+    estimated_budget_cost: '',      // budget range (budgetRanges vocabulary)
 
     // ── Mitigation child table ─────────────────────────────────────────────────
     mitigation_sector: '',
     mitigation_project_type: '',
     mitigation_program: '',
     mitigation_national_policy: '',
+    mitigation_regional_policy: '',
 
     // ── Adaptation child table ─────────────────────────────────────────────────
     adaptation_sector: '',
     adaptation_hazard: '',
     adaptation_national_policy: '',
+    adaptation_regional_policy: '',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,6 +106,8 @@ const Home = () => {
     const { hasPermission, isAuthenticated, loading: authLoading } = useCurrentUser();
     const [searchParams, setSearchParams] = useSearchParams();
     const [downloading, setDownloading] = useState(false);
+    const [view, setView] = useState('list');           // 'list' | 'map'
+    const [locations, setLocations] = useState(null);
 
     // ── Phase 1: Core data state ──────────────────────────────────────────────
     const [submissions, setSubmissions] = useState([]);
@@ -233,6 +244,16 @@ const Home = () => {
         if (!authLoading && !isAuthenticated) setFilters((prev) => (prev.mine ? { ...prev, mine: false } : prev));
     }, [authLoading, isAuthenticated]);
 
+    // Map view: load points for the same filters, refreshing when they change.
+    useEffect(() => {
+        if (view !== 'map') return undefined;
+        const controller = new AbortController();
+        getReportLocations(buildQueryParams(filters, appliedQuery), { signal: controller.signal })
+            .then(setLocations)
+            .catch((err) => { if (err.name !== 'AbortError') console.warn('[NCCRD] Could not load map points.', err); });
+        return () => controller.abort();
+    }, [view, filters, appliedQuery]);
+
     const handleDownload = async () => {
         setDownloading(true);
         try {
@@ -319,6 +340,9 @@ const Home = () => {
         if (filters.province) n++;
         if (filters.implementation_status) n++;
         if (filters.funding_type) n++;
+        if (filters.estimated_budget_cost) n++;
+        if (filters.mitigation_regional_policy) n++;
+        if (filters.adaptation_regional_policy) n++;
         if (filters.mitigation_sector) n++;
         if (filters.mitigation_project_type) n++;
         if (filters.mitigation_program) n++;
@@ -396,6 +420,10 @@ const Home = () => {
                                     <Upload size={14} style={{ marginRight: '0.5rem' }} /> BULK UPLOAD
                                 </button>
                             )}
+                            {/* Public, like the legacy site's "Offline submission". */}
+                            <a className="card-btn" href={UPLOAD_TEMPLATE_URL} title="Excel template with dropdown lists and instructions">
+                                <Download size={14} style={{ marginRight: '0.5rem' }} /> OFFLINE TEMPLATE
+                            </a>
                         </div>
                     </div>
 
@@ -683,6 +711,15 @@ const Home = () => {
                                     options={facets.funding_type ?? []}
                                     onChange={(v) => setFilter('funding_type', v)}
                                 />
+
+                                <FacetSelect
+                                    id="facet-estimated_budget_cost"
+                                    label="Estimated Budget"
+                                    value={filters.estimated_budget_cost}
+                                    options={facets.estimated_budget_cost ?? []}
+                                    pinned={BUDGET_RANGES}
+                                    onChange={(v) => setFilter('estimated_budget_cost', v)}
+                                />
                             </FilterSection>
 
                             {/* ══════════════════════════════════════════════
@@ -728,12 +765,14 @@ const Home = () => {
                                     onChange={(v) => setFilter('mitigation_national_policy', v)}
                                 />
 
-                                {/*
-                                 * Regional Policy (provincial_municipal)
-                                 * The field exists on the Mitigation model but is not a supported
-                                 * filter param on GET /list_submission yet.  Omitted to avoid
-                                 * a non-functional control.  Add back when the backend supports it.
-                                 */}
+                                {/* Regional Policy → mitigation provincial_municipal */}
+                                <FacetSelect
+                                    id="facet-mitigation_regional_policy"
+                                    label="Regional Policy"
+                                    value={filters.mitigation_regional_policy}
+                                    options={facets.mitigation_regional_policy ?? []}
+                                    onChange={(v) => setFilter('mitigation_regional_policy', v)}
+                                />
                             </FilterSection>
 
                             {/* ══════════════════════════════════════════════
@@ -771,11 +810,14 @@ const Home = () => {
                                     onChange={(v) => setFilter('adaptation_national_policy', v)}
                                 />
 
-                                {/*
-                                 * Regional Policy (provincial_municipal)
-                                 * Same situation as Mitigation — omitted until the backend
-                                 * exposes it as a list_submission filter param.
-                                 */}
+                                {/* Regional Policy → adaptation provincial_municipal */}
+                                <FacetSelect
+                                    id="facet-adaptation_regional_policy"
+                                    label="Regional Policy"
+                                    value={filters.adaptation_regional_policy}
+                                    options={facets.adaptation_regional_policy ?? []}
+                                    onChange={(v) => setFilter('adaptation_regional_policy', v)}
+                                />
                             </FilterSection>
 
                         </div>
@@ -795,6 +837,19 @@ const Home = () => {
                                 )}
                             </div>
                             <div className="flex items-center" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <div className="view-toggle" role="group" aria-label="Show results as">
+                                    {['list', 'map'].map((v) => (
+                                        <button
+                                            key={v}
+                                            type="button"
+                                            aria-pressed={view === v}
+                                            className={view === v ? 'is-active' : ''}
+                                            onClick={() => setView(v)}
+                                        >
+                                            {v === 'list' ? <List size={15} /> : <MapIcon size={15} />} {v === 'list' ? 'List' : 'Map'}
+                                        </button>
+                                    ))}
+                                </div>
                                 <button
                                     type="button"
                                     className="btn btn-outline"
@@ -864,6 +919,14 @@ const Home = () => {
                                 </div>
                             </div>
 
+                        ) : view === 'map' ? (
+                            <div className="glass-panel" style={{ padding: '1rem' }}>
+                                <Suspense fallback={<p className="report-empty">Loading map…</p>}>
+                                    {locations
+                                        ? <ProjectMap projects={locations.projects} withoutLocation={locations.without_location} height={560} />
+                                        : <p className="report-empty">Loading map…</p>}
+                                </Suspense>
+                            </div>
                         ) : (
                             /* Submission cards */
                             <div
@@ -886,7 +949,7 @@ const Home = () => {
                                     >
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                                <span className="badge badge-success">{sub.submission_status || 'Pending'}</span>
+                                                <StatusBadge submission={sub} hidePublished />
                                                 <InterventionBadge type={sub.intervention_measurement} />
                                             </div>
                                             <Link to={`/submission/${sub.id}`} style={{ textDecoration: 'none' }}>
@@ -907,10 +970,12 @@ const Home = () => {
                                                 </p>
                                             )}
                                         </div>
-                                        <div style={{ marginLeft: '1rem', flexShrink: 0 }}>
+                                        <div style={{ marginLeft: '1rem', flexShrink: 0, display: 'flex', gap: '0.5rem' }}>
+                                            <DownloadProjectButton submission={sub} compact />
                                             <Link
                                                 to={`/submission/${sub.id}`}
                                                 className="btn btn-outline"
+                                                aria-label={`View ${sub.title || 'project'}`}
                                                 style={{ borderRadius: 'var(--radius-full)', padding: '0.5rem' }}
                                             >
                                                 <ChevronRight size={20} color="var(--accent-primary)" />
