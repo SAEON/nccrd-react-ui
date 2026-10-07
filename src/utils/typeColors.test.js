@@ -12,3 +12,12 @@ describe('typeColors', () => {
         expect(typeColor(undefined)).toBe('#94a3b8');
     });
 });
+
+describe('badge colours', () => {
+    it('tints the type colour for the box and uses a darker shade for the text', async () => {
+        const { typeTint, typeTextColor } = await import('./typeColors');
+        expect(typeTint('Adaptation')).toBe('rgba(27, 175, 122, 0.12)');
+        expect(typeTextColor('Adaptation')).toBe('#047857');
+        expect(typeTextColor('Something else')).toBe('#475569');
+    });
+});
