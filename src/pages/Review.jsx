@@ -13,16 +13,10 @@ import { useCurrentUser } from '../context/CurrentUserContext';
 import { REVIEW_STATES } from '../utils/reviewStatus';
 import StatusBadge from '../components/StatusBadge';
 import InterventionBadge from '../components/InterventionBadge';
+import { sourceLabel } from '../utils/dataSources';
 
 const TABS = ['awaiting_review', 'not_accepted', 'draft', 'published'];
 const PAGE_SIZE = 50;
-
-const SOURCES = {
-    sqlserver_legacy: 'Legacy NCCRD',
-    gauteng_register_2024: 'Gauteng register 2024',
-    wc_project_database_2020: 'Western Cape database 2020',
-    react_app: 'Submission form',
-};
 
 const formatDate = (iso) => (iso ? new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
@@ -78,6 +72,7 @@ const Review = () => {
                 <h1 style={{ fontSize: '2rem', margin: '0 0 0.5rem' }}>Review submissions</h1>
                 <p className="report-lede">
                     Open a project to read it in full, then accept it to publish it, or mark it not accepted with a reason for the submitter.
+                    {' '}<Link to="/admin/pipeline">Data pipeline: loaded sources and data-quality worklists →</Link>
                 </p>
             </header>
 
@@ -116,7 +111,7 @@ const Review = () => {
                                     </span>
                                     <strong>{s.title || 'Untitled project'}</strong>
                                     <span className="review-row-meta">
-                                        {[s.implementation_organization, SOURCES[s.data_source] || s.data_source, s.createdate && `added ${formatDate(s.createdate)}`]
+                                        {[s.implementation_organization, sourceLabel(s.data_source), s.createdate && `added ${formatDate(s.createdate)}`]
                                             .filter(Boolean).join(' · ')}
                                     </span>
                                 </span>

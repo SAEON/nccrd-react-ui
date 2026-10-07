@@ -19,6 +19,7 @@ const Review = lazy(() => import('./pages/Review'))
 const InfoPage = lazy(() => import('./pages/InfoPage'))
 const Register = lazy(() => import('./pages/Register'))
 const AdminRegistrations = lazy(() => import('./pages/AdminRegistrations'))
+const DataPipeline = lazy(() => import('./pages/DataPipeline'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="admin/users/new" element={<RequireAuth><AdminCreateUser /></RequireAuth>} />
           <Route path="review" element={<RequireAuth><Review /></RequireAuth>} />
           <Route path="admin/registrations" element={<RequireAuth><AdminRegistrations /></RequireAuth>} />
+          <Route path="admin/pipeline" element={<RequireAuth><DataPipeline /></RequireAuth>} />
           <Route path="register" element={<Register />} />
           <Route path="reports" element={<Reports />} />
           {/* Same paths as the legacy site, so existing links keep working. */}

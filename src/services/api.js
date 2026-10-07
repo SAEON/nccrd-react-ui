@@ -121,6 +121,19 @@ export const reviewSubmission = async (id, decision, comments) => {
 };
 
 /** Submissions per review state, for the review queue. GET /submission/review/counts. */
+export const getPipelineStatus = async () => {
+    const res = await fetch(`${API_BASE_URL}/pipeline/status`, { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** Projects behind one data-quality issue: { data_source, field, issue, limit, offset }. */
+export const getPipelineIssueProjects = async (params) => {
+    const res = await fetch(`${API_BASE_URL}/pipeline/issues?${new URLSearchParams(params)}`, { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
 export const getReviewCounts = async () => {
     const res = await fetch(`${API_BASE_URL}/submission/review/counts`, { headers: { ..._authHeaders() } });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
