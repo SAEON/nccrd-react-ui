@@ -1,13 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// InterventionBadge — project type in the shared boxed .badge style, with a
-// colour dot carrying the type colour (shared with the map and charts,
-// utils/typeColors.js); the text keeps the badge's readable colour.
+// InterventionBadge — project type in the shared boxed .badge style, the box
+// tinted in the type's colour (shared with the map and charts,
+// utils/typeColors.js) behind darker text of the same hue, like the other
+// coloured badges.
 // ─────────────────────────────────────────────────────────────────────────────
-import { typeColor } from '../utils/typeColors';
+import { typeTextColor, typeTint } from '../utils/typeColors';
 
 const InterventionBadge = ({ type }) => (
-    <span className="badge type-badge">
-        <span className="type-dot" style={{ background: typeColor(type) }} aria-hidden="true" />
+    <span className="badge type-badge" style={{ background: typeTint(type), color: typeTextColor(type) }}>
         {type || 'General'}
     </span>
 );

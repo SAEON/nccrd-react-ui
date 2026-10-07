@@ -17,6 +17,26 @@ export const OTHER_TYPE_COLOR = '#94a3b8';
 
 export const typeColor = (type) => TYPE_COLORS[type] ?? OTHER_TYPE_COLOR;
 
+/**
+ * Darker shades of the same hues, for text: each reads at 4.9:1 or better on
+ * its own badge tint (typeTint), where the identity colours above only reach
+ * about 3:1.
+ */
+const TYPE_TEXT_COLORS = {
+    Mitigation: '#8a5a00',
+    Adaptation: '#047857',
+    'Cross Cutting': '#4338ca',
+};
+
+export const typeTextColor = (type) => TYPE_TEXT_COLORS[type] ?? '#475569';
+
+/** The type colour as a light tint, for a badge's background. */
+export const typeTint = (type, alpha = 0.12) => {
+    const hex = typeColor(type).slice(1);
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 /** Projects per type as [type, count] pairs, known types in their fixed order. */
 export const countByType = (projects) => {
     const counts = {};
