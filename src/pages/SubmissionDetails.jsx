@@ -37,7 +37,7 @@ const formatZAR = (amount) =>
 /** Sidebar fact: grey icon, small uppercase label, value. */
 const SidebarRow = ({ icon, label, children }) => (
     <div className="pd-fact">
-        <span className="pd-fact-icon" aria-hidden="true">{icon}</span>
+        <span className="pd-icon" aria-hidden="true">{icon}</span>
         <div>
             <div className="pd-fact-label">{label}</div>
             {children}
@@ -48,7 +48,7 @@ const SidebarRow = ({ icon, label, children }) => (
 /** A titled section card in the main column. */
 const Section = ({ icon, title, children }) => (
     <section className="pd-section">
-        <h3 className="pd-section-title"><span aria-hidden="true">{icon}</span>{title}</h3>
+        <h3 className="pd-section-title"><span className="pd-icon" aria-hidden="true">{icon}</span>{title}</h3>
         {children}
     </section>
 );
@@ -238,7 +238,7 @@ const SubmissionDetails = () => {
                 {/* ── Body ────────────────────────────────────────────────── */}
                 <div className="pd-body">
                     <div className="pd-main">
-                        <Section icon={<Target size={16} />} title="Project Context">
+                        <Section icon={<Target size={16} strokeWidth={1.75} />} title="Project Context">
                             <Rows
                                 heading="Key Identifiers"
                                 rows={[
@@ -256,7 +256,7 @@ const SubmissionDetails = () => {
                         </Section>
 
                         {(geo.country || geo.province || geo.district || points.length > 0) && (
-                            <Section icon={<MapPin size={16} />} title="Location">
+                            <Section icon={<MapPin size={16} strokeWidth={1.75} />} title="Location">
                                 <Rows
                                     rows={[
                                         ['Country', countryName(geo.country)],
@@ -278,7 +278,7 @@ const SubmissionDetails = () => {
                         )}
 
                         {m && (
-                            <Section icon={<Zap size={16} />} title="Mitigation Details">
+                            <Section icon={<Zap size={16} strokeWidth={1.75} />} title="Mitigation Details">
                                 <Rows
                                     rows={[
                                         ['Sector', tag(m.sector)],
@@ -299,7 +299,7 @@ const SubmissionDetails = () => {
                         )}
 
                         {a && (
-                            <Section icon={<Leaf size={16} />} title="Adaptation Details">
+                            <Section icon={<Leaf size={16} strokeWidth={1.75} />} title="Adaptation Details">
                                 <Rows
                                     rows={[
                                         ['Sector', tag(a.sector)],
@@ -315,7 +315,7 @@ const SubmissionDetails = () => {
                             </Section>
                         )}
 
-                        <Section icon={<FileText size={16} />} title="Progress Reports (MRV)">
+                        <Section icon={<FileText size={16} strokeWidth={1.75} />} title="Progress Reports (MRV)">
                             {project.progress_reports && project.progress_reports.length > 0 ? (
                                 <ul className="pd-box pd-reports">
                                     {project.progress_reports.map((report) => (
@@ -330,7 +330,7 @@ const SubmissionDetails = () => {
                                 </ul>
                             ) : (
                                 <div className="pd-empty">
-                                    <span className="pd-empty-icon" aria-hidden="true"><FolderOpen size={20} /></span>
+                                    <span className="pd-empty-icon" aria-hidden="true"><FolderOpen size={20} strokeWidth={1.75} /></span>
                                     <p>No reports attached to this submission.</p>
                                 </div>
                             )}
@@ -341,11 +341,11 @@ const SubmissionDetails = () => {
                     <aside className="pd-side">
                         <h3 className="pd-side-title">Management Details</h3>
 
-                        <SidebarRow icon={<Building size={17} />} label="Implementation Org">
+                        <SidebarRow icon={<Building size={16} strokeWidth={1.75} />} label="Implementation Org">
                             <div className="pd-fact-value">{project.implementation_organization || <span className="pd-none">Not recorded</span>}</div>
                         </SidebarRow>
 
-                        <SidebarRow icon={<Mail size={17} />} label="Project Manager">
+                        <SidebarRow icon={<Mail size={16} strokeWidth={1.75} />} label="Project Manager">
                             <div className="pd-fact-value">{project.project_manager_name || <span className="pd-none">Not recorded</span>}</div>
                             {project.project_manager_organization && <div className="pd-fact-sub">{project.project_manager_organization}</div>}
                             {project.project_manager_email && (
@@ -354,7 +354,7 @@ const SubmissionDetails = () => {
                             {project.project_manager_contact_number && <div className="pd-fact-sub">{project.project_manager_contact_number}</div>}
                         </SidebarRow>
 
-                        <SidebarRow icon={<Banknote size={17} />} label="Funding Details">
+                        <SidebarRow icon={<Banknote size={16} strokeWidth={1.75} />} label="Funding Details">
                             {!hasFunding && <div className="pd-none">Not designated</div>}
                             {project.funding_organization && <div className="pd-fact-value">{project.funding_organization}</div>}
                             {project.funding_type && <div className="pd-fact-sub">Type: {project.funding_type}</div>}
@@ -362,7 +362,7 @@ const SubmissionDetails = () => {
                             {project.estimated_budget_cost && <div className="pd-fact-sub">Estimate: {project.estimated_budget_cost}</div>}
                         </SidebarRow>
 
-                        <SidebarRow icon={<Clock size={17} />} label="Timeline">
+                        <SidebarRow icon={<Clock size={16} strokeWidth={1.75} />} label="Timeline">
                             {when ? <div className="pd-fact-value">{when}</div> : <div className="pd-none">No dates recorded</div>}
                         </SidebarRow>
                     </aside>
