@@ -13,7 +13,7 @@ import { countryName, locationPoints, locationPrecision, otherPartners, timeline
 import {
     ArrowLeft, Clock, Banknote, MapPin, Building,
     Target, Activity, Edit2, Trash2, Mail,
-    Leaf, Zap, FileDown, FolderOpen, CheckCircle, X,
+    Leaf, Zap, FileDown, FileText, FolderOpen, CheckCircle, X,
 } from 'lucide-react';
 
 const LocationMap = lazy(() => import('../components/LocationMap'));
@@ -25,27 +25,52 @@ const IMPORTED = new Set(['gauteng_register_2024', 'wc_project_database_2020']);
 // South African Rand formatter  (Phase 2 — Localisation)
 // Intl.NumberFormat produces e.g. "R 1 234 567,89" in the en-ZA locale.
 // ─────────────────────────────────────────────────────────────────────────────
+const formatDate = (iso) => new Date(iso).toLocaleDateString('en-ZA');
+
 const formatZAR = (amount) =>
     new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sidebar fact row — keeps the sidebar DRY
+// Building blocks (styles: .pd-* in index.css)
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Sidebar fact: grey icon, small uppercase label, value. */
 const SidebarRow = ({ icon, label, children }) => (
-    <div className="flex items-start gap-3" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ padding: '0.6rem', flexShrink: 0 }}>
-            {icon}
-        </div>
+    <div className="pd-fact">
+        <span className="pd-fact-icon" aria-hidden="true">{icon}</span>
         <div>
-            <div className="input-label" style={{ margin: 0 }}>{label}</div>
+            <div className="pd-fact-label">{label}</div>
             {children}
         </div>
     </div>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Detail list sub-panel (used for Mitigation / Adaptation sections)
-// ─────────────────────────────────────────────────────────────────────────────
+/** A titled section card in the main column. */
+const Section = ({ icon, title, children }) => (
+    <section className="pd-section">
+        <h3 className="pd-section-title"><span aria-hidden="true">{icon}</span>{title}</h3>
+        {children}
+    </section>
+);
+
+/** Label / value rows in a white box; empty values are left out. */
+const Rows = ({ heading, rows }) => {
+    const items = rows.map(([l, v]) => [l, typeof v === 'string' ? resolveValue(v) : v]).filter(([, v]) => v);
+    if (!items.length && !heading) return null;
+    return (
+        <div className="pd-box">
+            {heading && <h4 className="pd-box-heading">{heading}</h4>}
+            <dl className="pd-rows">
+                {items.map(([label, value]) => (
+                    <div key={label} className="pd-row">
+                        <dt>{label}:</dt>
+                        <dd>{value}</dd>
+                    </div>
+                ))}
+            </dl>
+        </div>
+    );
+};
 
 /**
  * New progress-report uploads store a root-relative file_url (served by the
@@ -53,24 +78,6 @@ const SidebarRow = ({ icon, label, children }) => (
  * the ones that need it.
  */
 const resolveFileUrl = (fileUrl) => (fileUrl?.startsWith('/') ? `${API_BASE_URL}${fileUrl}` : fileUrl);
-
-const DetailPanel = ({ icon, title, rows, children }) => {
-    const items = rows.map(([l, v]) => [l, resolveValue(v)]).filter(([, v]) => v);
-    if (!items.length && !children) return null;
-    return (
-        <div className="glass-panel mt-4" style={{ padding: '1.5rem', background: 'var(--bg-primary)', border: '1px solid rgba(28,61,47,0.12)' }}>
-            <h4 className="mb-4 flex items-center gap-2">{icon} {title}</h4>
-            <ul style={{ paddingLeft: '1.5rem', color: 'var(--text-secondary)', margin: 0 }}>
-                {items.map(([label, value]) => (
-                    <li key={label} className="mb-1">
-                        <strong>{label}:</strong> {value}
-                    </li>
-                ))}
-            </ul>
-            {children}
-        </div>
-    );
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
@@ -145,13 +152,14 @@ const SubmissionDetails = () => {
     const precision = locationPrecision(geo.located_by);
     const partners = otherPartners(project.implementation_partners_other, project.implementation_organization);
     const when = timeline(project.start_date, project.end_date);
+    const tag = (v) => (resolveValue(v) ? <span className="pd-tag">{resolveValue(v)}</span> : null);
     const hasFunding = project.funding_organization || project.funding_type
         || project.funding_amount != null || project.estimated_budget_cost;
     const m = project.mitigation;
     const a = project.adaptation;
 
     return (
-        <div className="container" style={{ paddingBottom: '4rem' }}>
+        <div className="container pd-page">
             {justSaved && (
                 <div
                     role="status"
@@ -178,18 +186,7 @@ const SubmissionDetails = () => {
                 </div>
             )}
 
-            {/* Back button */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <Link
-                    to="/"
-                    className="btn btn-outline mb-6"
-                    style={{ display: 'inline-flex', padding: '0.4rem 1rem', borderRadius: 'var(--radius-full)', marginTop: '2rem' }}
-                >
-                    <ArrowLeft size={16} /> Back to Projects
-                </Link>
-
-            </div>
-
+            <Link to="/" className="pd-back"><ArrowLeft size={14} /> Back to projects</Link>
 
             {reviewed && (
                 <div role="status" className="glass-panel review-note review-note-published">
@@ -206,267 +203,171 @@ const SubmissionDetails = () => {
                 />
             )}
 
-            <div className="glass-panel animate-fade-in" style={{ padding: 0, overflow: 'hidden' }}>
-
+            <article className="pd-card animate-fade-in">
                 {/* ── Header ──────────────────────────────────────────────── */}
-                <div style={{ background: 'var(--bg-primary)', padding: '2.5rem 3rem', borderBottom: '1px solid var(--border-light)' }}>
-                    <div className="flex justify-between items-start mb-4">
-                        {/* Status badges */}
-                        <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+                <header className="pd-head">
+                    <div className="pd-head-top">
+                        <div className="pd-badges">
                             <StatusBadge submission={project} />
                             <InterventionBadge type={project.intervention_measurement} />
-                            {project.implementation_status && (
-                                <span className="badge">{project.implementation_status}</span>
-                            )}
+                            {project.implementation_status && <span className="badge pd-badge-plain">{project.implementation_status}</span>}
                         </div>
-
-                        {/* Action buttons — grouped top-right (Phase 2) */}
-                        <div className="flex gap-2" style={{ flexShrink: 0, flexWrap: 'wrap' }}>
+                        <div className="pd-actions">
                             <DownloadProjectButton submission={project} />
                             {canEditSubmission(project, user, hasPermission) && (
-                                <Link
-                                    to={`/submission/edit/${id}`}
-                                    className="btn btn-outline flex items-center gap-2"
-                                    style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', fontWeight: 600 }}
-                                >
+                                <Link to={`/submission/edit/${id}`} className="btn btn-outline pd-action">
                                     <Edit2 size={15} /> Edit
                                 </Link>
                             )}
                             {hasPermission('delete-submission') && (
-                                <button
-                                    onClick={handleDelete}
-                                    className="btn btn-outline flex items-center gap-2"
-                                    style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', fontWeight: 600, color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
-                                >
+                                <button type="button" onClick={handleDelete} className="btn btn-outline pd-action pd-action-danger">
                                     <Trash2 size={15} /> Delete
                                 </button>
                             )}
                         </div>
                     </div>
-
-                    <h1 style={{ fontSize: '2.2rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-                        {project.title || `Project ${project.id}`}
-                    </h1>
-                    <p style={{ fontSize: '1.05rem', maxWidth: '800px', margin: 0, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                        {project.description || 'No detailed description available for this climate response project.'}
+                    <h1 className="pd-title">{project.title || 'Untitled project'}</h1>
+                    <p className="pd-description">
+                        {project.description || 'No description has been recorded for this project.'}
                     </p>
                     {project.link && (
-                        <a
-                            href={project.link} target="_blank" rel="noreferrer"
-                            style={{ display: 'inline-block', marginTop: '1rem', fontSize: '0.9rem', color: 'var(--accent-primary)' }}
-                        >
-                            View Project Website →
-                        </a>
+                        <a href={project.link} target="_blank" rel="noreferrer" className="pd-link">View project website →</a>
                     )}
-                </div>
+                </header>
 
                 {/* ── Body ────────────────────────────────────────────────── */}
-                <div className="details-body">
-
-                    {/* ── Main column ─────────────────────────────────────── */}
-                    <div className="details-main">
-                        <h3 className="mb-4 flex items-center gap-2">
-                            <Target size={19} color="var(--accent-primary)" /> Project Context
-                        </h3>
-
-                        {/* Key identifiers */}
-                        <div className="glass-panel" style={{ padding: '1.5rem', background: 'var(--bg-primary)', border: '1px solid rgba(28,61,47,0.1)' }}>
-                            <h4 className="mb-4">About this record</h4>
-                            <ul style={{ paddingLeft: '1.5rem', color: 'var(--text-secondary)', margin: 0 }}>
-                                {project.data_source && <li className="mb-2"><strong>Source:</strong> {sourceLabel(project.data_source)}</li>}
-                                {project.createdate && (
-                                    <li className="mb-2">
-                                        <strong>{IMPORTED.has(project.data_source) ? 'Imported:' : 'Added:'}</strong>{' '}
-                                        {new Date(project.createdate).toLocaleDateString('en-ZA')}
-                                    </li>
-                                )}
-                                {project.updatedate && (
-                                    <li className="mb-2"><strong>Last updated:</strong> {new Date(project.updatedate).toLocaleDateString('en-ZA')}</li>
-                                )}
-                                {project.research && <li className="mb-2"><strong>Research:</strong> {project.research}</li>}
-                                {project.platform && <li className="mb-2"><strong>Platform:</strong> {project.platform}</li>}
-                            </ul>
-                        </div>
-
-                        {/* Geographic location */}
-                        {(geo.country || geo.province || geo.district || points.length > 0) && (
-                            <DetailPanel
-                                icon={<MapPin size={15} color="var(--accent-primary)" />}
-                                title="Location"
+                <div className="pd-body">
+                    <div className="pd-main">
+                        <Section icon={<Target size={16} />} title="Project Context">
+                            <Rows
+                                heading="Key Identifiers"
                                 rows={[
-                                    ['Country', countryName(geo.country)],
-                                    ['Province', geo.province],
-                                    ['District', geo.district],
-                                    ['Local Municipality', geo.local_municipality],
-                                    ['Town / Suburb', geo.town || geo.town_suburb],
+                                    [IMPORTED.has(project.data_source) ? 'Imported' : 'Created',
+                                        project.createdate ? formatDate(project.createdate) : null],
+                                    ['Last updated', project.updatedate ? formatDate(project.updatedate) : null],
+                                    ['Intervention Type', project.intervention_measurement],
+                                    ['Implementation Status', project.implementation_status],
+                                    ['Data Source', project.data_source ? <code className="pd-code">{sourceLabel(project.data_source)}</code> : null],
+                                    ['Other Partners', partners],
+                                    ['Research', project.research],
+                                    ['Platform', project.platform],
                                 ]}
-                            >
+                            />
+                        </Section>
+
+                        {(geo.country || geo.province || geo.district || points.length > 0) && (
+                            <Section icon={<MapPin size={16} />} title="Location">
+                                <Rows
+                                    rows={[
+                                        ['Country', countryName(geo.country)],
+                                        ['Province', geo.province],
+                                        ['District', geo.district],
+                                        ['Local Municipality', geo.local_municipality],
+                                        ['Town / Suburb', geo.town || geo.town_suburb],
+                                    ]}
+                                />
                                 {points.length > 0 && (
-                                    <div className="details-map">
+                                    <div className="pd-map">
                                         <Suspense fallback={<p className="report-empty">Loading map…</p>}>
                                             <LocationMap points={points} zoom={precision.zoom} type={project.intervention_measurement} />
                                         </Suspense>
-                                        <p className="details-map-note">{precision.label}</p>
+                                        <p className="pd-map-note">{precision.label}</p>
                                     </div>
                                 )}
-                            </DetailPanel>
+                            </Section>
                         )}
 
-                        {/* Mitigation details */}
                         {m && (
-                            <DetailPanel
-                                icon={<Zap size={15} color="var(--accent-primary)" />}
-                                title="Mitigation Details"
-                                rows={[
-                                    ['Sector', m.sector],
-                                    ['Subsector', m.subsector],
-                                    ['Project Type', m.project_type],
-                                    ['Project Subtype', m.project_subtype],
-                                    ['Programme', m.mitigation_program],
-                                    ['National Policy', m.national_policy],
-                                    ['Provincial / Municipal', m.provincial_municipal],
-                                    ['Primary Outcome', m.primary_intended_outcome],
-                                    ['Environmental Co-benefit', m.environmental_co_benefit],
-                                    ['Social Co-benefit', m.social_co_benefit],
-                                    ['Economic Co-benefit', m.economic_co_benefit],
-                                    ['Carbon Credits', m.carbon_credit],
-                                ]}
-                            />
+                            <Section icon={<Zap size={16} />} title="Mitigation Details">
+                                <Rows
+                                    rows={[
+                                        ['Sector', tag(m.sector)],
+                                        ['Subsector', m.subsector],
+                                        ['Project Type', m.project_type],
+                                        ['Project Subtype', m.project_subtype],
+                                        ['Programme', m.mitigation_program],
+                                        ['National Policy', m.national_policy],
+                                        ['Provincial / Municipal', m.provincial_municipal],
+                                        ['Primary Outcome', m.primary_intended_outcome],
+                                        ['Environmental Co-benefit', m.environmental_co_benefit],
+                                        ['Social Co-benefit', m.social_co_benefit],
+                                        ['Economic Co-benefit', m.economic_co_benefit],
+                                        ['Carbon Credits', m.carbon_credit],
+                                    ]}
+                                />
+                            </Section>
                         )}
 
-                        {/* Adaptation details */}
                         {a && (
-                            <DetailPanel
-                                icon={<Leaf size={15} color="var(--accent-primary)" />}
-                                title="Adaptation Details"
-                                rows={[
-                                    ['Sector', a.sector],
-                                    ['Hazard', a.hazard],
-                                    ['National Policy', a.national_policy],
-                                    ['Provincial / Municipal', a.provincial_municipal],
-                                    ['Intervention Goal', a.intervention_goal],
-                                    ['Climate Impact', a.climate_impact],
-                                    ['Address Climate Impact', a.address_climate_impact],
-                                    ['Impact Response', a.impact_response],
-                                ]}
-                            />
+                            <Section icon={<Leaf size={16} />} title="Adaptation Details">
+                                <Rows
+                                    rows={[
+                                        ['Sector', tag(a.sector)],
+                                        ['Hazard', a.hazard],
+                                        ['National Policy', a.national_policy],
+                                        ['Provincial / Municipal', a.provincial_municipal],
+                                        ['Intervention Goal', a.intervention_goal],
+                                        ['Climate Impact', a.climate_impact],
+                                        ['Address Climate Impact', a.address_climate_impact],
+                                        ['Impact Response', a.impact_response],
+                                    ]}
+                                />
+                            </Section>
                         )}
 
-                        {/* ── MRV / Progress Reports (Phase 2) ──────────────── */}
-                        <div className="glass-panel mt-4" style={{ padding: '1.5rem', background: 'var(--bg-primary)', border: '1px solid rgba(28,61,47,0.1)' }}>
-                            <h4 className="mb-4 flex items-center gap-2">
-                                <FolderOpen size={15} color="var(--accent-primary)" /> Progress Reports (MRV)
-                            </h4>
-
+                        <Section icon={<FileText size={16} />} title="Progress Reports (MRV)">
                             {project.progress_reports && project.progress_reports.length > 0 ? (
-                                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                <ul className="pd-box pd-reports">
                                     {project.progress_reports.map((report) => (
-                                        <li key={report.id} style={{ marginBottom: '0.75rem' }}>
-                                            <a
-                                                href={resolveFileUrl(report.file_url)}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                style={{
-                                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                                                    color: 'var(--accent-primary)', textDecoration: 'none',
-                                                    fontSize: '0.9rem',
-                                                }}
-                                            >
-                                                <FileDown size={15} />
-                                                {report.file_name}
+                                        <li key={report.id}>
+                                            <a href={resolveFileUrl(report.file_url)} target="_blank" rel="noreferrer">
+                                                <FileDown size={15} /> {report.file_name}
                                             </a>
-                                            {report.upload_date && (
-                                                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                                                    {new Date(report.upload_date).toLocaleDateString('en-ZA')}
-                                                </span>
-                                            )}
-                                            {report.notes && (
-                                                <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{report.notes}</p>
-                                            )}
+                                            {report.upload_date && <span className="pd-muted">{formatDate(report.upload_date)}</span>}
+                                            {report.notes && <p className="pd-muted">{report.notes}</p>}
                                         </li>
                                     ))}
                                 </ul>
                             ) : (
-                                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>
-                                    No reports attached to this submission.
-                                </p>
+                                <div className="pd-empty">
+                                    <span className="pd-empty-icon" aria-hidden="true"><FolderOpen size={20} /></span>
+                                    <p>No reports attached to this submission.</p>
+                                </div>
                             )}
-                        </div>
+                        </Section>
                     </div>
 
                     {/* ── Sidebar ─────────────────────────────────────────── */}
-                    <div className="details-side">
-                        <h3 className="mb-5">Management Details</h3>
+                    <aside className="pd-side">
+                        <h3 className="pd-side-title">Management Details</h3>
 
-                        {/* Implementation org */}
-                        <SidebarRow icon={<Building size={17} color="var(--accent-primary)" />} label="Implementation Org">
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {project.implementation_organization || 'Not recorded'}
-                            </div>
-                            {partners && (
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                    With: {partners}
-                                </div>
-                            )}
+                        <SidebarRow icon={<Building size={17} />} label="Implementation Org">
+                            <div className="pd-fact-value">{project.implementation_organization || <span className="pd-none">Not recorded</span>}</div>
                         </SidebarRow>
 
-                        {/* Project manager */}
-                        <SidebarRow icon={<Mail size={17} color="var(--accent-primary)" />} label="Project Manager">
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {project.project_manager_name || 'Unassigned'}
-                            </div>
-                            {project.project_manager_organization && (
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                    {project.project_manager_organization}
-                                </div>
-                            )}
+                        <SidebarRow icon={<Mail size={17} />} label="Project Manager">
+                            <div className="pd-fact-value">{project.project_manager_name || <span className="pd-none">Not recorded</span>}</div>
+                            {project.project_manager_organization && <div className="pd-fact-sub">{project.project_manager_organization}</div>}
                             {project.project_manager_email && (
-                                <a
-                                    href={`mailto:${project.project_manager_email}`}
-                                    style={{ display: 'block', fontSize: '0.85rem', color: 'var(--accent-primary)' }}
-                                >
-                                    {project.project_manager_email}
-                                </a>
+                                <a className="pd-fact-link" href={`mailto:${project.project_manager_email}`}>{project.project_manager_email}</a>
                             )}
-                            {project.project_manager_contact_number && (
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                    {project.project_manager_contact_number}
-                                </div>
-                            )}
+                            {project.project_manager_contact_number && <div className="pd-fact-sub">{project.project_manager_contact_number}</div>}
                         </SidebarRow>
 
-                        {/* Funding — Banknote icon, ZAR formatting (Phase 2) */}
-                        <SidebarRow icon={<Banknote size={17} color="var(--accent-primary)" />} label="Funding Details">
-                            {!hasFunding && <div className="details-none">No funding details recorded</div>}
-                            {project.funding_organization && (
-                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{project.funding_organization}</div>
-                            )}
-                            {project.funding_type && (
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                    Type: {project.funding_type}
-                                </div>
-                            )}
-                            {project.funding_amount != null && (
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                    Amount: {formatZAR(project.funding_amount)}
-                                </div>
-                            )}
-                            {project.estimated_budget_cost && (
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                    Estimate: {project.estimated_budget_cost}
-                                </div>
-                            )}
+                        <SidebarRow icon={<Banknote size={17} />} label="Funding Details">
+                            {!hasFunding && <div className="pd-none">Not designated</div>}
+                            {project.funding_organization && <div className="pd-fact-value">{project.funding_organization}</div>}
+                            {project.funding_type && <div className="pd-fact-sub">Type: {project.funding_type}</div>}
+                            {project.funding_amount != null && <div className="pd-fact-sub">Amount: {formatZAR(project.funding_amount)}</div>}
+                            {project.estimated_budget_cost && <div className="pd-fact-sub">Estimate: {project.estimated_budget_cost}</div>}
                         </SidebarRow>
 
-                        {/* Timeline */}
-                        <SidebarRow icon={<Clock size={17} color="var(--accent-primary)" />} label="Timeline">
-                            {when
-                                ? <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{when}</div>
-                                : <div className="details-none">No dates recorded</div>}
+                        <SidebarRow icon={<Clock size={17} />} label="Timeline">
+                            {when ? <div className="pd-fact-value">{when}</div> : <div className="pd-none">No dates recorded</div>}
                         </SidebarRow>
-                    </div>
+                    </aside>
                 </div>
-            </div>
+            </article>
         </div>
     );
 };

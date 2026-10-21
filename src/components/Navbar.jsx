@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Search, UserPlus, Activity, FolderOpen, ClipboardCheck, BarChart3, UserCheck } from 'lucide-react';
+import { Search, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { getReviewCounts, getRegistrations } from '../services/api';
 
@@ -59,75 +59,62 @@ const Navbar = () => {
     };
 
     return (
-        <header className="top-banner">
-            <div className="container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div className="logo-lockup">
-                        <img src="/dffe-logo.jpg" alt="National Coat of Arms" style={{ height: '60px' }} />
-                        <div className="dept-text">
-                            Department: <span>Forestry, Fisheries and the Environment</span> REPUBLIC OF SOUTH AFRICA
-                        </div>
-                    </div>
-                </div>
+        <header className="site-header">
+            <div className="container site-header-inner">
+                <Link to="/" className="brand" aria-label="NCCRD home">
+                    <img
+                        src="/dffe-logo.jpg"
+                        className="brand-logo"
+                        alt="Department of Forestry, Fisheries and the Environment, Republic of South Africa"
+                    />
+                </Link>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem 2rem' }}>
-                    <nav className="nav-links">
-                        <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
-                            <Search size={14} /> SEARCH DATA
+                <nav className="site-nav" aria-label="Main">
+                    <a href="/" className="site-nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
+                        <Search size={16} aria-hidden="true" /> Search Data
+                    </a>
+                    <Link to="/reports" className="site-nav-link">
+                        <BarChart3 size={16} aria-hidden="true" /> Data Reports
+                    </Link>
+                    {isAuthenticated && (
+                        <a href="/?mine=1" className="site-nav-link" onClick={handleMySubmissions}>
+                            <FolderOpen size={16} aria-hidden="true" /> My Submissions
                         </a>
-                        <Link to="/reports" className="nav-link">
-                            <BarChart3 size={14} /> DATA REPORTS
+                    )}
+                    {hasPermission('create-submission') && (
+                        <Link to="/submission/new" className="site-nav-link">
+                            <FilePlus size={16} aria-hidden="true" /> New Submission
                         </Link>
-                        {isAuthenticated && (
-                            <a href="/?mine=1" className="nav-link" onClick={handleMySubmissions}>
-                                <FolderOpen size={14} /> MY SUBMISSIONS
-                            </a>
-                        )}
-                        {hasPermission('create-submission') && (
-                            <Link to="/submission/new" className="nav-link">
-                                <Activity size={14} /> NEW SUBMISSION
-                            </Link>
-                        )}
-                        {isReviewer && (
-                            <Link to="/review" className="nav-link">
-                                <ClipboardCheck size={14} /> REVIEW
-                                {awaitingReview > 0 && <span className="nav-count" aria-label={`${awaitingReview} waiting`}>{awaitingReview}</span>}
-                            </Link>
-                        )}
-                        {isAdmin && (
-                            <Link to="/admin/registrations" className="nav-link">
-                                <UserCheck size={14} /> REQUESTS
-                                {pendingRequests > 0 && <span className="nav-count" aria-label={`${pendingRequests} waiting`}>{pendingRequests}</span>}
-                            </Link>
-                        )}
-                        {hasPermission('assign-role') && (
-                            <Link to="/admin/users/new" className="nav-link">
-                                <UserPlus size={14} /> ADD USER
-                            </Link>
-                        )}
-                    </nav>
+                    )}
+                    {isReviewer && (
+                        <Link to="/review" className="site-nav-link">
+                            <ClipboardCheck size={16} aria-hidden="true" /> Review
+                            {awaitingReview > 0 && <span className="nav-count" aria-label={`${awaitingReview} waiting`}>{awaitingReview}</span>}
+                        </Link>
+                    )}
+                    {isAdmin && (
+                        <Link to="/admin/registrations" className="site-nav-link">
+                            <UserCheck size={16} aria-hidden="true" /> Requests
+                            {pendingRequests > 0 && <span className="nav-count" aria-label={`${pendingRequests} waiting`}>{pendingRequests}</span>}
+                        </Link>
+                    )}
+                    {hasPermission('assign-role') && (
+                        <Link to="/admin/users/new" className="site-nav-link">
+                            <UserPlus size={16} aria-hidden="true" /> Add User
+                        </Link>
+                    )}
+                </nav>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-light)', paddingLeft: '1.5rem' }}>
-                        <img src="/flag.svg" alt="South African Flag" style={{ height: '24px', borderRadius: '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
-                        {isAuthenticated ? (
-                            <>
-                                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                                    Signed in as <strong>{user.name}</strong>
-                                </span>
-                                <button
-                                    className="btn btn-outline"
-                                    onClick={handleLogout}
-                                    style={{ fontSize: '0.75rem', gap: '0.4rem' }}
-                                >
-                                    LOG OUT
-                                </button>
-                            </>
-                        ) : (
-                            <Link to="/login" className="btn btn-outline" style={{ fontSize: '0.75rem', gap: '0.4rem' }}>
-                                LOG IN
-                            </Link>
-                        )}
-                    </div>
+                <div className="site-account">
+                    <img src="/flag.svg" alt="South African flag" className="site-flag" />
+                    {isAuthenticated ? (
+                        <>
+                            <span className="site-signed-in">Signed in as <strong>{user.name}</strong></span>
+                            <button type="button" className="btn btn-outline site-account-btn" onClick={handleLogout}>Log out</button>
+                        </>
+                    ) : (
+                        <Link to="/login" className="btn btn-outline site-account-btn">Log in</Link>
+                    )}
                 </div>
             </div>
         </header>
