@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { getSubmissionById, deleteSubmission, API_BASE_URL } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { resolveValue } from '../utils/resolveValue';
@@ -8,11 +8,18 @@ import StatusBadge from '../components/StatusBadge';
 import InterventionBadge from '../components/InterventionBadge';
 import DownloadProjectButton from '../components/DownloadProjectButton';
 import { ReviewPanel, ReviewStatusNote } from '../components/ReviewPanel';
+import { sourceLabel } from '../utils/dataSources';
+import { countryName, locationPoints, locationPrecision, otherPartners, timeline } from '../utils/projectDetails';
 import {
     ArrowLeft, Clock, Banknote, MapPin, Building,
     Target, Activity, Edit2, Trash2, Mail,
     Leaf, Zap, FileDown, FolderOpen, CheckCircle, X,
 } from 'lucide-react';
+
+const LocationMap = lazy(() => import('../components/LocationMap'));
+
+/** Sources loaded in bulk from a register: their "created" date is the import date. */
+const IMPORTED = new Set(['gauteng_register_2024', 'wc_project_database_2020']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // South African Rand formatter  (Phase 2 — Localisation)
@@ -47,9 +54,9 @@ const SidebarRow = ({ icon, label, children }) => (
  */
 const resolveFileUrl = (fileUrl) => (fileUrl?.startsWith('/') ? `${API_BASE_URL}${fileUrl}` : fileUrl);
 
-const DetailPanel = ({ icon, title, rows }) => {
+const DetailPanel = ({ icon, title, rows, children }) => {
     const items = rows.map(([l, v]) => [l, resolveValue(v)]).filter(([, v]) => v);
-    if (!items.length) return null;
+    if (!items.length && !children) return null;
     return (
         <div className="glass-panel mt-4" style={{ padding: '1.5rem', background: 'var(--bg-primary)', border: '1px solid rgba(28,61,47,0.12)' }}>
             <h4 className="mb-4 flex items-center gap-2">{icon} {title}</h4>
@@ -60,6 +67,7 @@ const DetailPanel = ({ icon, title, rows }) => {
                     </li>
                 ))}
             </ul>
+            {children}
         </div>
     );
 };
@@ -133,6 +141,12 @@ const SubmissionDetails = () => {
     );
 
     const geo = project.geo_location || {};
+    const points = locationPoints(geo.coordinates);
+    const precision = locationPrecision(geo.located_by);
+    const partners = otherPartners(project.implementation_partners_other, project.implementation_organization);
+    const when = timeline(project.start_date, project.end_date);
+    const hasFunding = project.funding_organization || project.funding_type
+        || project.funding_amount != null || project.estimated_budget_cost;
     const m = project.mitigation;
     const a = project.adaptation;
 
@@ -247,44 +261,55 @@ const SubmissionDetails = () => {
                 </div>
 
                 {/* ── Body ────────────────────────────────────────────────── */}
-                <div className="flex" style={{ padding: '3rem' }}>
+                <div className="details-body">
 
                     {/* ── Main column ─────────────────────────────────────── */}
-                    <div style={{ flex: 2, paddingRight: '2.5rem', borderRight: '1px solid var(--border-light)' }}>
+                    <div className="details-main">
                         <h3 className="mb-4 flex items-center gap-2">
                             <Target size={19} color="var(--accent-primary)" /> Project Context
                         </h3>
 
                         {/* Key identifiers */}
                         <div className="glass-panel" style={{ padding: '1.5rem', background: 'var(--bg-primary)', border: '1px solid rgba(28,61,47,0.1)' }}>
-                            <h4 className="mb-4">Key Identifiers</h4>
+                            <h4 className="mb-4">About this record</h4>
                             <ul style={{ paddingLeft: '1.5rem', color: 'var(--text-secondary)', margin: 0 }}>
-                                {/* <li className="mb-2"><strong>Project ID:</strong> <span style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{project.id}</span></li> */}
-                                <li className="mb-2"><strong>Created:</strong> {project.createdate ? new Date(project.createdate).toLocaleDateString('en-ZA') : 'Unknown'}</li>
-                                <li className="mb-2"><strong>Intervention Type:</strong> {project.intervention_measurement || '—'}</li>
-                                <li className="mb-2"><strong>Implementation Status:</strong> {project.implementation_status || '—'}</li>
+                                {project.data_source && <li className="mb-2"><strong>Source:</strong> {sourceLabel(project.data_source)}</li>}
+                                {project.createdate && (
+                                    <li className="mb-2">
+                                        <strong>{IMPORTED.has(project.data_source) ? 'Imported:' : 'Added:'}</strong>{' '}
+                                        {new Date(project.createdate).toLocaleDateString('en-ZA')}
+                                    </li>
+                                )}
+                                {project.updatedate && (
+                                    <li className="mb-2"><strong>Last updated:</strong> {new Date(project.updatedate).toLocaleDateString('en-ZA')}</li>
+                                )}
                                 {project.research && <li className="mb-2"><strong>Research:</strong> {project.research}</li>}
                                 {project.platform && <li className="mb-2"><strong>Platform:</strong> {project.platform}</li>}
-                                {project.data_source && <li className="mb-2"><strong>Data Source:</strong> {project.data_source}</li>}
-                                {project.implementation_partners_other && (
-                                    <li className="mb-2"><strong>Other Partners:</strong> {project.implementation_partners_other}</li>
-                                )}
                             </ul>
                         </div>
 
                         {/* Geographic location */}
-                        {(geo.country || geo.province || geo.district) && (
+                        {(geo.country || geo.province || geo.district || points.length > 0) && (
                             <DetailPanel
                                 icon={<MapPin size={15} color="var(--accent-primary)" />}
                                 title="Location"
                                 rows={[
-                                    ['Country', geo.country],
+                                    ['Country', countryName(geo.country)],
                                     ['Province', geo.province],
                                     ['District', geo.district],
                                     ['Local Municipality', geo.local_municipality],
-                                    ['Town / Suburb', geo.town_suburb],
+                                    ['Town / Suburb', geo.town || geo.town_suburb],
                                 ]}
-                            />
+                            >
+                                {points.length > 0 && (
+                                    <div className="details-map">
+                                        <Suspense fallback={<p className="report-empty">Loading map…</p>}>
+                                            <LocationMap points={points} zoom={precision.zoom} type={project.intervention_measurement} />
+                                        </Suspense>
+                                        <p className="details-map-note">{precision.label}</p>
+                                    </div>
+                                )}
+                            </DetailPanel>
                         )}
 
                         {/* Mitigation details */}
@@ -370,14 +395,19 @@ const SubmissionDetails = () => {
                     </div>
 
                     {/* ── Sidebar ─────────────────────────────────────────── */}
-                    <div style={{ flex: 1, paddingLeft: '2.5rem' }}>
+                    <div className="details-side">
                         <h3 className="mb-5">Management Details</h3>
 
                         {/* Implementation org */}
                         <SidebarRow icon={<Building size={17} color="var(--accent-primary)" />} label="Implementation Org">
                             <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {project.implementation_organization || 'N/A'}
+                                {project.implementation_organization || 'Not recorded'}
                             </div>
+                            {partners && (
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    With: {partners}
+                                </div>
+                            )}
                         </SidebarRow>
 
                         {/* Project manager */}
@@ -407,9 +437,10 @@ const SubmissionDetails = () => {
 
                         {/* Funding — Banknote icon, ZAR formatting (Phase 2) */}
                         <SidebarRow icon={<Banknote size={17} color="var(--accent-primary)" />} label="Funding Details">
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {project.funding_organization || 'Not designated'}
-                            </div>
+                            {!hasFunding && <div className="details-none">No funding details recorded</div>}
+                            {project.funding_organization && (
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{project.funding_organization}</div>
+                            )}
                             {project.funding_type && (
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                     Type: {project.funding_type}
@@ -429,11 +460,9 @@ const SubmissionDetails = () => {
 
                         {/* Timeline */}
                         <SidebarRow icon={<Clock size={17} color="var(--accent-primary)" />} label="Timeline">
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {project.start_date ? new Date(project.start_date).toLocaleDateString('en-ZA') : 'TBD'}
-                                {' – '}
-                                {project.end_date ? new Date(project.end_date).toLocaleDateString('en-ZA') : 'TBD'}
-                            </div>
+                            {when
+                                ? <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{when}</div>
+                                : <div className="details-none">No dates recorded</div>}
                         </SidebarRow>
                     </div>
                 </div>
