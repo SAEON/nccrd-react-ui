@@ -680,16 +680,19 @@ const Home = () => {
                                  * Options come from /facets/submission. "National" is the legacy
                                  * value for country-wide projects; it is labelled as South Africa
                                  * and listed first, but still sent to the backend as "National".
+                                 * Hidden on a province site, which lists that province only.
                                  */}
-                                <FacetSelect
-                                    id="facet-province"
-                                    label="Province"
-                                    value={filters.province}
-                                    options={facets.province ?? []}
-                                    labels={{ National: 'South Africa (National)' }}
-                                    pinned={['National']}
-                                    onChange={(v) => setFilter('province', v)}
-                                />
+                                {!site.province && (
+                                    <FacetSelect
+                                        id="facet-province"
+                                        label="Province"
+                                        value={filters.province}
+                                        options={facets.province ?? []}
+                                        labels={{ National: 'South Africa (National)' }}
+                                        pinned={['National']}
+                                        onChange={(v) => setFilter('province', v)}
+                                    />
+                                )}
 
                                 {/*
                                  * Estimated Budget (estimated_budget_cost)
