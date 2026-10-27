@@ -39,6 +39,7 @@ import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
 import { regionPossessive } from '../utils/site';
 import Navbar from '../components/Navbar';
+import HeroCredit from '../components/HeroCredit';
 import InterventionBadge from '../components/InterventionBadge';
 import StatusBadge from '../components/StatusBadge';
 import DownloadProjectButton from '../components/DownloadProjectButton';
@@ -377,8 +378,9 @@ const Home = () => {
             {/* ── Hero Section with Background ───────────────────────────────── */}
             <section
                 className="hero-container"
-                style={{ backgroundImage: 'url("/hero-bg.jpg")' }}
+                style={{ '--hero-image': `url("${site.hero_image.url}")` }}
             >
+                {site.hero_image.credit && <HeroCredit image={site.hero_image} />}
                 <div className="hero-overlay animate-fade-in">
                     <h1 className="hero-title" style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '-0.03em' }}>
                         {site.title}

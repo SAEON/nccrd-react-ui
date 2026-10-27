@@ -8,6 +8,7 @@ export const NATIONAL_SITE = {
     province: null,
     logo_url: '/dffe-logo.jpg',
     flag_url: '/flag.svg',
+    hero_image: { url: '/hero-bg.jpg' },
     contact_email: 'nccrd@environment.gov.za',
     theme: null,
     front_matter: null,

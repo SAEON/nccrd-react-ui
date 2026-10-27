@@ -272,7 +272,26 @@ p {
   justify-content: center;
   position: relative;
   overflow: hidden;
+  /* The site's photo (--hero-image, set by Home), washed with its main colour. */
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent-primary) 10%, transparent), color-mix(in srgb, var(--accent-primary) 28%, transparent)),
+    var(--hero-image, url("/hero-bg.jpg"));
 }
+
+/* The photo's credit, as its licence asks; top right, clear of the action
+   cards that overlap the hero's bottom edge. */
+.hero-credit {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  z-index: 1;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.7rem;
+}
+.hero-credit a { color: inherit; }
 
 .hero-overlay {
   background: rgba(255, 255, 255, 0.4);
