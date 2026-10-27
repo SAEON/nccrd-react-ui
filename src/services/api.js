@@ -11,6 +11,16 @@ import { getToken, clearToken } from './authStorage';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:2022';
 
+/**
+ * The site this page belongs to: its hostname, e.g. mccrd.environment.gov.za
+ * or mccrd.localhost for the Mpumalanga site. The API may be on another host
+ * (locally localhost:2022), so every request names the site whose projects,
+ * reports and branding it wants.
+ */
+const SITE = window.location.hostname;
+
+const _fetch = (url, init = {}) => fetch(url, { ...init, headers: { 'X-NCCRD-Site': SITE, ...init.headers } });
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,6 +70,16 @@ async function _throwOnError(res) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * The current site's names, province and branding (GET /site): the national
+ * NCCRD or a province site such as the MCCRD.
+ */
+export const getSite = async () => {
+    const res = await _fetch(`${API_BASE_URL}/site`);
+    if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
+/**
  * List all submissions, optionally filtered.
  *
  * Throws on network or API error so the caller (Home.jsx) can set
@@ -70,7 +90,7 @@ async function _throwOnError(res) {
  */
 export const getSubmissions = async (params = {}, { signal } = {}) => {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(
+    const res = await _fetch(
         `${API_BASE_URL}/submission/list_submission${query ? '?' + query : ''}`,
         // Public, but sends the login when there is one: `mine=true` needs it.
         { signal, headers: { ..._authHeaders() } }
@@ -83,7 +103,7 @@ export const getSubmissions = async (params = {}, { signal } = {}) => {
  * Return distinct facet values for building dynamic filter menus.
  */
 export const getFacets = async () => {
-    const res = await fetch(`${API_BASE_URL}/submission/facets/submission`);
+    const res = await _fetch(`${API_BASE_URL}/submission/facets/submission`);
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
@@ -96,7 +116,7 @@ export const getFacets = async () => {
 export const getSubmissionById = async (id) => {
     // Sends the login when there is one: unpublished projects are visible to
     // their owner and to reviewers only.
-    const res = await fetch(`${API_BASE_URL}/submission/read_submission/${id}`, {
+    const res = await _fetch(`${API_BASE_URL}/submission/read_submission/${id}`, {
         headers: { ..._authHeaders() },
     });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
@@ -111,7 +131,7 @@ export const getSubmissionById = async (id) => {
  * @param {string} [comments] - shown to the submitter; required for 'Not accepted'
  */
 export const reviewSubmission = async (id, decision, comments) => {
-    const res = await fetch(`${API_BASE_URL}/submission/${id}/review`, {
+    const res = await _fetch(`${API_BASE_URL}/submission/${id}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ..._authHeaders() },
         body: JSON.stringify({ decision, comments }),
@@ -122,20 +142,20 @@ export const reviewSubmission = async (id, decision, comments) => {
 
 /** Submissions per review state, for the review queue. GET /submission/review/counts. */
 export const getPipelineStatus = async () => {
-    const res = await fetch(`${API_BASE_URL}/pipeline/status`, { headers: { ..._authHeaders() } });
+    const res = await _fetch(`${API_BASE_URL}/pipeline/status`, { headers: { ..._authHeaders() } });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
 /** Projects behind one data-quality issue: { data_source, field, issue, limit, offset }. */
 export const getPipelineIssueProjects = async (params) => {
-    const res = await fetch(`${API_BASE_URL}/pipeline/issues?${new URLSearchParams(params)}`, { headers: { ..._authHeaders() } });
+    const res = await _fetch(`${API_BASE_URL}/pipeline/issues?${new URLSearchParams(params)}`, { headers: { ..._authHeaders() } });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
 export const getReviewCounts = async () => {
-    const res = await fetch(`${API_BASE_URL}/submission/review/counts`, { headers: { ..._authHeaders() } });
+    const res = await _fetch(`${API_BASE_URL}/submission/review/counts`, { headers: { ..._authHeaders() } });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
@@ -150,7 +170,7 @@ export const getReviewCounts = async () => {
  * @param {object} data - SubmissionCreate payload
  */
 export const createSubmission = async (data) => {
-    const res = await fetch(`${API_BASE_URL}/submission/new_submission`, {
+    const res = await _fetch(`${API_BASE_URL}/submission/new_submission`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ..._authHeaders() },
         body: JSON.stringify(data),
@@ -166,7 +186,7 @@ export const createSubmission = async (data) => {
  * @param {object} data - SubmissionUpdate payload (only changed fields)
  */
 export const updateSubmission = async (id, data) => {
-    const res = await fetch(
+    const res = await _fetch(
         `${API_BASE_URL}/submission/update_new_submission/${id}`,
         {
             method: 'PATCH',
@@ -184,7 +204,7 @@ export const updateSubmission = async (id, data) => {
  * @param {string} id - UUID of the submission to delete
  */
 export const deleteSubmission = async (id) => {
-    const res = await fetch(`${API_BASE_URL}/submission/delete/${id}`, {
+    const res = await _fetch(`${API_BASE_URL}/submission/delete/${id}`, {
         method: 'DELETE',
         headers: { ..._authHeaders() },
     });
@@ -200,19 +220,19 @@ export const deleteSubmission = async (id) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const getProvinces = async () => {
-    const res = await fetch(`${API_BASE_URL}/region/names/provinces`);
+    const res = await _fetch(`${API_BASE_URL}/region/names/provinces`);
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
 
 export const getDistrictsByProvince = async (provinceCode) => {
-    const res = await fetch(`${API_BASE_URL}/region/names/districts/by_province/${encodeURIComponent(provinceCode)}`);
+    const res = await _fetch(`${API_BASE_URL}/region/names/districts/by_province/${encodeURIComponent(provinceCode)}`);
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
 
 export const getLocalDistrictsByDistrict = async (districtCode) => {
-    const res = await fetch(`${API_BASE_URL}/region/names/local_districts/by_district/${encodeURIComponent(districtCode)}`);
+    const res = await _fetch(`${API_BASE_URL}/region/names/local_districts/by_district/${encodeURIComponent(districtCode)}`);
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
@@ -226,7 +246,7 @@ export const getLocalDistrictsByDistrict = async (districtCode) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const getVocabulary = async (treeName) => {
-    const res = await fetch(`${API_BASE_URL}/vocabulary/${encodeURIComponent(treeName)}`);
+    const res = await _fetch(`${API_BASE_URL}/vocabulary/${encodeURIComponent(treeName)}`);
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
@@ -240,7 +260,7 @@ export const getVocabulary = async (treeName) => {
  * Returns { access_token, token_type, expires_in, must_change_password }.
  */
 export const login = async (email, password) => {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const res = await _fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -254,7 +274,7 @@ export const login = async (email, password) => {
  * never hits the fixed token lifetime. Backed by POST /auth/refresh.
  */
 export const refreshToken = async () => {
-    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const res = await _fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
         headers: { ..._authHeaders() },
     });
@@ -266,7 +286,7 @@ export const refreshToken = async () => {
  * Change the current user's password. Backed by POST /auth/change-password.
  */
 export const changePassword = async (currentPassword, newPassword) => {
-    const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    const res = await _fetch(`${API_BASE_URL}/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ..._authHeaders() },
         body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
@@ -284,7 +304,7 @@ export const changePassword = async (currentPassword, newPassword) => {
  * on that tenant. Backed by GET /rbac/me.
  */
 export const getCurrentUser = async () => {
-    const res = await fetch(`${API_BASE_URL}/rbac/me`, {
+    const res = await _fetch(`${API_BASE_URL}/rbac/me`, {
         headers: { ..._authHeaders() },
     });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
@@ -308,7 +328,7 @@ export const createUser = async (name, email, roleGrant = {}) => {
         body.role_id = roleGrant.roleId;
         body.tenant_id = roleGrant.tenantId;
     }
-    const res = await fetch(`${API_BASE_URL}/rbac/users`, {
+    const res = await _fetch(`${API_BASE_URL}/rbac/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ..._authHeaders() },
         body: JSON.stringify(body),
@@ -321,7 +341,7 @@ export const createUser = async (name, email, roleGrant = {}) => {
  * List roles. Requires `view-roles`. Backed by GET /rbac/roles.
  */
 export const getRoles = async () => {
-    const res = await fetch(`${API_BASE_URL}/rbac/roles`, {
+    const res = await _fetch(`${API_BASE_URL}/rbac/roles`, {
         headers: { ..._authHeaders() },
     });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
@@ -332,7 +352,7 @@ export const getRoles = async () => {
  * List tenants. Requires `view-tenants`. Backed by GET /rbac/tenants.
  */
 export const getTenants = async () => {
-    const res = await fetch(`${API_BASE_URL}/rbac/tenants`, {
+    const res = await _fetch(`${API_BASE_URL}/rbac/tenants`, {
         headers: { ..._authHeaders() },
     });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
@@ -363,7 +383,7 @@ export const uploadBulkSubmissions = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch(
+    const res = await _fetch(
         `${API_BASE_URL}/submission/create_submission_upload-xlsx/`,
         { method: 'POST', headers: { ..._authHeaders() }, body: formData }
     );
@@ -390,7 +410,7 @@ export const uploadProgressReport = async (submissionId, file, notes) => {
     formData.append('file', file);
     if (notes) formData.append('notes', notes);
 
-    const res = await fetch(
+    const res = await _fetch(
         `${API_BASE_URL}/submission/${submissionId}/progress_reports`,
         { method: 'POST', headers: { ..._authHeaders() }, body: formData }
     );
@@ -409,7 +429,7 @@ const _reportQuery = (params) => {
 
 /** Headline figures and breakdowns. Backed by GET /report/summary. */
 export const getReportSummary = async (params = {}, { signal } = {}) => {
-    const res = await fetch(`${API_BASE_URL}/report/summary${_reportQuery(params)}`, { signal });
+    const res = await _fetch(`${API_BASE_URL}/report/summary${_reportQuery(params)}`, { signal });
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
@@ -420,7 +440,7 @@ export const getReportSummary = async (params = {}, { signal } = {}) => {
  * "mine" filter works here too.
  */
 export const getReportLocations = async (params = {}, { signal } = {}) => {
-    const res = await fetch(`${API_BASE_URL}/report/locations${_reportQuery(params)}`, {
+    const res = await _fetch(`${API_BASE_URL}/report/locations${_reportQuery(params)}`, {
         signal, headers: { ..._authHeaders() },
     });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
@@ -429,7 +449,7 @@ export const getReportLocations = async (params = {}, { signal } = {}) => {
 
 /** Field completeness overall and per data source. Backed by GET /report/quality. */
 export const getReportQuality = async (params = {}, { signal } = {}) => {
-    const res = await fetch(`${API_BASE_URL}/report/quality${_reportQuery(params)}`, { signal });
+    const res = await _fetch(`${API_BASE_URL}/report/quality${_reportQuery(params)}`, { signal });
     if (!res.ok) await _throwOnError(res);
     return res.json();
 };
@@ -439,12 +459,13 @@ export const UPLOAD_TEMPLATE_URL = `${API_BASE_URL}/submission/upload_template`;
 
 /**
  * URL that downloads the filtered projects (the API sends it as an
- * attachment). Used as a plain link so the browser handles the download.
+ * attachment). Used as a plain link so the browser handles the download; a
+ * link can't send headers, so it names the site in its query.
  *
  * @param {'xlsx'|'csv'} format
  */
 export const reportExportUrl = (params = {}, format = 'xlsx') =>
-    `${API_BASE_URL}/report/export${_reportQuery({ ...params, format })}`;
+    `${API_BASE_URL}/report/export${_reportQuery({ ...params, format, site: SITE })}`;
 
 /**
  * Download the filtered projects through fetch, so the request carries the
@@ -453,7 +474,7 @@ export const reportExportUrl = (params = {}, format = 'xlsx') =>
  * @param {'xlsx'|'csv'} format
  */
 export const downloadExport = async (params = {}, format = 'xlsx') => {
-    const res = await fetch(reportExportUrl(params, format), { headers: { ..._authHeaders() } });
+    const res = await _fetch(reportExportUrl(params, format), { headers: { ..._authHeaders() } });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     const filename = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '')?.[1]
         || `nccrd-projects.${format}`;
@@ -471,7 +492,7 @@ export const downloadExport = async (params = {}, format = 'xlsx') => {
 
 /** Request an account: { name, email, organisation, password, note }. Returns { detail }. */
 export const registerAccount = async (body) => {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    const res = await _fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -482,14 +503,14 @@ export const registerAccount = async (body) => {
 
 /** Account requests by status ('pending' | 'approved' | 'rejected'); needs assign-role. */
 export const getRegistrations = async (status = 'pending') => {
-    const res = await fetch(`${API_BASE_URL}/rbac/registrations?status=${status}`, { headers: { ..._authHeaders() } });
+    const res = await _fetch(`${API_BASE_URL}/rbac/registrations?status=${status}`, { headers: { ..._authHeaders() } });
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);
     return res.json();
 };
 
 /** Approve a request, granting `roleId` on the current tenant. */
 export const approveRegistration = async (userId, roleId) => {
-    const res = await fetch(`${API_BASE_URL}/rbac/registrations/${userId}/approve`, {
+    const res = await _fetch(`${API_BASE_URL}/rbac/registrations/${userId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ..._authHeaders() },
         body: JSON.stringify({ role_id: roleId }),
@@ -499,7 +520,7 @@ export const approveRegistration = async (userId, roleId) => {
 };
 
 export const rejectRegistration = async (userId) => {
-    const res = await fetch(`${API_BASE_URL}/rbac/registrations/${userId}/reject`, {
+    const res = await _fetch(`${API_BASE_URL}/rbac/registrations/${userId}/reject`, {
         method: 'POST',
         headers: { ..._authHeaders() },
     });

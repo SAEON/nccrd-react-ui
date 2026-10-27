@@ -2,10 +2,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Search, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
+import { useSite } from '../context/SiteContext';
+import { NATIONAL_SITE } from '../utils/site';
 import { getReviewCounts, getRegistrations } from '../services/api';
+
+const DFFE_LOGO_ALT = 'Department of Forestry, Fisheries and the Environment, Republic of South Africa';
+
+/** If a site's image is missing, show the national one instead of a broken image. */
+const fallBackTo = (src, alt) => (e) => {
+    if (e.currentTarget.getAttribute('src') !== src) Object.assign(e.currentTarget, { src, alt });
+};
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const site = useSite();
     const { user, hasPermission, isAuthenticated, logout } = useCurrentUser();
     const isReviewer = hasPermission('validate-submission');
     const [awaitingReview, setAwaitingReview] = useState(null);
@@ -61,11 +71,12 @@ const Navbar = () => {
     return (
         <header className="site-header">
             <div className="container site-header-inner">
-                <Link to="/" className="brand" aria-label="NCCRD home">
+                <Link to="/" className="brand" aria-label={`${site.short_title} home`}>
                     <img
-                        src="/dffe-logo.jpg"
+                        src={site.logo_url}
                         className="brand-logo"
-                        alt="Department of Forestry, Fisheries and the Environment, Republic of South Africa"
+                        alt={site.logo_url === NATIONAL_SITE.logo_url ? DFFE_LOGO_ALT : `${site.title} logo`}
+                        onError={fallBackTo(NATIONAL_SITE.logo_url, DFFE_LOGO_ALT)}
                     />
                 </Link>
 
@@ -106,7 +117,12 @@ const Navbar = () => {
                 </nav>
 
                 <div className="site-account">
-                    <img src="/flag.svg" alt="South African flag" className="site-flag" />
+                    <img
+                        src={site.flag_url}
+                        alt={site.flag_url === NATIONAL_SITE.flag_url ? 'South African flag' : `${site.province} flag`}
+                        className="site-flag"
+                        onError={fallBackTo(NATIONAL_SITE.flag_url, 'South African flag')}
+                    />
                     {isAuthenticated ? (
                         <>
                             <span className="site-signed-in">Signed in as <strong>{user.name}</strong></span>

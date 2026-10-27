@@ -36,6 +36,8 @@ import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getSubmissions, getFacets, downloadExport, getReportLocations, UPLOAD_TEMPLATE_URL } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
+import { useSite } from '../context/SiteContext';
+import { regionPossessive } from '../utils/site';
 import Navbar from '../components/Navbar';
 import InterventionBadge from '../components/InterventionBadge';
 import StatusBadge from '../components/StatusBadge';
@@ -104,6 +106,7 @@ const EMPTY_FILTERS = {
 const Home = () => {
 
     const { hasPermission, isAuthenticated, loading: authLoading } = useCurrentUser();
+    const site = useSite();
     const [searchParams, setSearchParams] = useSearchParams();
     const [downloading, setDownloading] = useState(false);
     const [view, setView] = useState('list');           // 'list' | 'map'
@@ -378,10 +381,10 @@ const Home = () => {
             >
                 <div className="hero-overlay animate-fade-in">
                     <h1 className="hero-title" style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '-0.03em' }}>
-                        National Climate Change Response Database
+                        {site.title}
                     </h1>
                     <p style={{ fontSize: '1.1rem', color: 'var(--accent-secondary)', fontWeight: 500, maxWidth: '600px', margin: '0 auto' }}>
-                        Tracking South Africa’s climate change adaptation and mitigation projects.
+                        Tracking {regionPossessive(site)} climate change adaptation and mitigation projects.
                     </p>
                 </div>
             </section>

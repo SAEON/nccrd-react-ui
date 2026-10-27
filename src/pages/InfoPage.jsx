@@ -2,11 +2,13 @@
  * InfoPage.jsx — About, Terms of Use, PAIA & POPIA and Licence.
  *
  * About / Terms / PAIA render DFFE's published text from content/infoPages.js
- * verbatim. The licence page describes this rebuild's own licensing, which
+ * verbatim; a province site with its own About texts (GET /site) shows those
+ * instead. The licence page describes this rebuild's own licensing, which
  * differs from the legacy site's (MIT, DFFE).
  */
 import { Link } from 'react-router-dom';
 import { INFO_PAGES } from '../content/infoPages';
+import { useSite } from '../context/SiteContext';
 
 const isInternal = (href) => href.startsWith('/');
 
@@ -82,8 +84,23 @@ const PAGES = {
     license: { title: 'Licence', content: <LicenceContent /> },
 };
 
+/** A site's own About texts, in the legacy sites' order. */
+const FRONT_MATTER_SECTIONS = ['about', 'explore', 'submit'];
+
+const FrontMatter = ({ sections }) => FRONT_MATTER_SECTIONS
+    .filter((key) => sections[key]?.content)
+    .map((key) => (
+        <section key={key}>
+            <h2>{sections[key].title}</h2>
+            <p>{sections[key].content}</p>
+        </section>
+    ));
+
 const InfoPage = ({ page }) => {
-    const { title, subtitle, content, extra } = PAGES[page];
+    const site = useSite();
+    const { title, subtitle, content, extra } = page === 'about' && site.front_matter
+        ? { title: `About the ${site.short_title}`, content: <FrontMatter sections={site.front_matter} /> }
+        : PAGES[page];
     return (
         <article className="container info-page">
             <h1>{title}</h1>
