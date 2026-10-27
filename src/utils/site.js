@@ -6,7 +6,7 @@ export const NATIONAL_SITE = {
     title: 'National Climate Change Response Database',
     short_title: 'NCCRD',
     province: null,
-    logo_url: '/dffe-logo.jpg',
+    logo_url: null,       // a site's own emblem, shown beside the DFFE logo
     flag_url: '/flag.svg',
     hero_image: { url: '/hero-bg.jpg' },
     contact_email: 'nccrd@environment.gov.za',

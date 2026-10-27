@@ -72,12 +72,16 @@ const Navbar = () => {
         <header className="site-header">
             <div className="container site-header-inner">
                 <Link to="/" className="brand" aria-label={`${site.short_title} home`}>
-                    <img
-                        src={site.logo_url}
-                        className="brand-logo"
-                        alt={site.logo_url === NATIONAL_SITE.logo_url ? DFFE_LOGO_ALT : `${site.title} logo`}
-                        onError={fallBackTo(NATIONAL_SITE.logo_url, DFFE_LOGO_ALT)}
-                    />
+                    <img src="/dffe-logo.jpg" className="brand-logo" alt={DFFE_LOGO_ALT} />
+                    {/* DFFE runs every site; a province site adds its own emblem. */}
+                    {site.logo_url && (
+                        <img
+                            src={site.logo_url}
+                            className="brand-emblem"
+                            alt={site.province ? `Coat of arms of ${site.province}` : `${site.title} emblem`}
+                            onError={(e) => { e.currentTarget.hidden = true; }}
+                        />
+                    )}
                 </Link>
 
                 <nav className="site-nav" aria-label="Main">

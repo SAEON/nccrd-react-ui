@@ -851,6 +851,7 @@ p {
 }
 .brand { grid-area: brand; display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit; }
 .brand-logo { display: block; height: 3.25rem; width: auto; }
+.brand-emblem { display: block; height: 3.25rem; width: auto; padding-left: 0.75rem; border-left: 1px solid var(--border-light); }
 .site-nav { grid-area: nav; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.25rem 1.25rem; }
 .site-nav-link {
   display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.1rem;
