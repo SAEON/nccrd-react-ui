@@ -51,7 +51,7 @@ const ChangePassword = () => {
     };
 
     return (
-        <div className="container" style={{ maxWidth: '420px', padding: '4rem 1rem' }}>
+        <div className="container" style={{ maxWidth: '26.25rem', padding: '4rem 1rem' }}>
             <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Set a new password</h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                 You&apos;re using a temporary password. Set a new one to continue.

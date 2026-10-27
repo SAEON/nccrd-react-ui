@@ -74,7 +74,7 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
         >
             {/* Dialog panel */}
             <div className="glass-panel animate-fade-in" style={{
-                width: '100%', maxWidth: '640px',
+                width: '100%', maxWidth: '40rem',
                 padding: '2rem', position: 'relative',
             }}>
                 <button
@@ -174,7 +174,7 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
                         </div>
 
                         {result.errors.length > 0 && (
-                            <div style={{ maxHeight: '220px', overflowY: 'auto', borderRadius: 'var(--radius-sm)' }}>
+                            <div style={{ maxHeight: '13.75rem', overflowY: 'auto', borderRadius: 'var(--radius-sm)' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '1px solid rgba(239,68,68,0.2)' }}>

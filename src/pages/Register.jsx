@@ -41,7 +41,7 @@ const Register = () => {
     };
 
     if (done) return (
-        <div className="container" style={{ maxWidth: '480px', padding: '4rem 1rem' }}>
+        <div className="container" style={{ maxWidth: '30rem', padding: '4rem 1rem' }}>
             <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Request sent</h1>
             <p role="status">{done}</p>
             <p style={{ marginTop: '1.5rem' }}><Link to="/login">Go to log in</Link></p>
@@ -49,7 +49,7 @@ const Register = () => {
     );
 
     return (
-        <div className="container" style={{ maxWidth: '480px', padding: '4rem 1rem' }}>
+        <div className="container" style={{ maxWidth: '30rem', padding: '4rem 1rem' }}>
             <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Request an account</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
                 You need an account to submit projects. An administrator reviews each request; you can log in once yours is approved.

@@ -383,7 +383,7 @@ const Home = () => {
                     <h1 className="hero-title" style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '-0.03em' }}>
                         {site.title}
                     </h1>
-                    <p style={{ fontSize: '1.1rem', color: 'var(--accent-secondary)', fontWeight: 500, maxWidth: '600px', margin: '0 auto' }}>
+                    <p style={{ fontSize: '1.1rem', color: 'var(--accent-secondary)', fontWeight: 500, maxWidth: '37.5rem', margin: '0 auto' }}>
                         Tracking {regionPossessive(site)} climate change adaptation and mitigation projects.
                     </p>
                 </div>
@@ -510,7 +510,7 @@ const Home = () => {
                             style={{
                                 padding: '1.5rem',
                                 position: 'sticky',
-                                top: '100px',
+                                top: '6.25rem',
                                 /*
                                  * Override the .glass-panel:hover lift effect.
                                  * Inline styles have higher specificity than
@@ -520,7 +520,7 @@ const Home = () => {
                                 transform: 'none',
                                 /* Scroll the panel itself when there are many filters
                                    and the viewport is short. */
-                                maxHeight: 'calc(100vh - 120px)',
+                                maxHeight: 'calc(100vh - 7.5rem)',
                                 overflowY: 'auto',
                             }}
                         >
@@ -550,8 +550,8 @@ const Home = () => {
                                             display: 'inline-flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            minWidth: '20px',
-                                            height: '20px',
+                                            minWidth: '1.25rem',
+                                            height: '1.25rem',
                                             borderRadius: '9999px',
                                             background: 'var(--accent-primary)',
                                             color: 'white',
@@ -908,7 +908,7 @@ const Home = () => {
                             <div className="glass-panel text-center" style={{ padding: '4rem 2rem' }}>
                                 <Database size={44} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
                                 <h3 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>No projects found</h3>
-                                <p style={{ color: 'var(--text-muted)', maxWidth: '380px', margin: '0 auto 1.5rem' }}>
+                                <p style={{ color: 'var(--text-muted)', maxWidth: '23.75rem', margin: '0 auto 1.5rem' }}>
                                     Try adjusting your search or filters, or add the first project.
                                 </p>
                                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>

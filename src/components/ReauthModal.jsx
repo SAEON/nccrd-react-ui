@@ -42,7 +42,7 @@ const ReauthModal = ({ email: initialEmail = '', onSuccess, onCancel }) => {
                 padding: '1rem',
             }}
         >
-            <form className="glass-panel" onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '420px', padding: '2rem' }}>
+            <form className="glass-panel" onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '26.25rem', padding: '2rem' }}>
                 <h2 id="reauth-title" style={{ fontSize: '1.3rem', marginBottom: '0.5rem' }}>Your session has expired</h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
                     Log in again to save. Your changes are still here.

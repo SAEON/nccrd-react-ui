@@ -8,7 +8,7 @@ import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { typeColor } from '../utils/typeColors';
 
-const LocationMap = ({ points, zoom, type, height = 220 }) => {
+const LocationMap = ({ points, zoom, type, height = '13.75rem' }) => {
     const center = points.length === 1
         ? points[0]
         : [points.reduce((s, p) => s + p[0], 0) / points.length, points.reduce((s, p) => s + p[1], 0) / points.length];

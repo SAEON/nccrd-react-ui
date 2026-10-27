@@ -32,7 +32,7 @@ const Login = () => {
     };
 
     return (
-        <div className="container" style={{ maxWidth: '420px', padding: '4rem 1rem' }}>
+        <div className="container" style={{ maxWidth: '26.25rem', padding: '4rem 1rem' }}>
             <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Log in</h1>
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
