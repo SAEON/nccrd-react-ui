@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Search, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck } from 'lucide-react';
+import { Home, Search, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
 import { NATIONAL_SITE } from '../utils/site';
@@ -70,7 +70,8 @@ const Navbar = () => {
 
     return (
         <header className="site-header">
-            <div className="container site-header-inner">
+            {/* Masthead: DFFE (and the province's emblem), the site's name, its flag. */}
+            <div className="container site-masthead">
                 <Link to="/" className="brand" aria-label={`${site.short_title} home`}>
                     <img src="/dffe-logo.jpg" className="brand-logo" alt={DFFE_LOGO_ALT} />
                     {/* DFFE runs every site; a province site adds its own emblem. */}
@@ -83,58 +84,71 @@ const Navbar = () => {
                         />
                     )}
                 </Link>
+                <Link to="/" className="site-title">{site.title}</Link>
+                <img
+                    src={site.flag_url}
+                    alt={site.flag_url === NATIONAL_SITE.flag_url ? 'South African flag' : `${site.province} flag`}
+                    className="site-flag"
+                    onError={fallBackTo(NATIONAL_SITE.flag_url, 'South African flag')}
+                />
+            </div>
 
-                <nav className="site-nav" aria-label="Main">
-                    <a href="/" className="site-nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
-                        <Search size={16} aria-hidden="true" /> Search Data
-                    </a>
-                    <Link to="/reports" className="site-nav-link">
-                        <BarChart3 size={16} aria-hidden="true" /> Data Reports
-                    </Link>
-                    {isAuthenticated && (
-                        <a href="/?mine=1" className="site-nav-link" onClick={handleMySubmissions}>
-                            <FolderOpen size={16} aria-hidden="true" /> My Submissions
+            {/* A slim bar in the site's colour: the pages, then the account. */}
+            <div className="site-navbar">
+                <div className="container site-navbar-inner">
+                    <nav className="site-nav" aria-label="Main">
+                        <Link to="/" className="site-nav-link">
+                            <Home size={15} aria-hidden="true" /> Home
+                        </Link>
+                        <a href="/" className="site-nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
+                            <Search size={15} aria-hidden="true" /> Search Data
                         </a>
-                    )}
-                    {hasPermission('create-submission') && (
-                        <Link to="/submission/new" className="site-nav-link">
-                            <FilePlus size={16} aria-hidden="true" /> New Submission
+                        <Link to="/reports" className="site-nav-link">
+                            <BarChart3 size={15} aria-hidden="true" /> Data Reports
                         </Link>
-                    )}
-                    {isReviewer && (
-                        <Link to="/review" className="site-nav-link">
-                            <ClipboardCheck size={16} aria-hidden="true" /> Review
-                            {awaitingReview > 0 && <span className="nav-count" aria-label={`${awaitingReview} waiting`}>{awaitingReview}</span>}
-                        </Link>
-                    )}
-                    {isAdmin && (
-                        <Link to="/admin/registrations" className="site-nav-link">
-                            <UserCheck size={16} aria-hidden="true" /> Requests
-                            {pendingRequests > 0 && <span className="nav-count" aria-label={`${pendingRequests} waiting`}>{pendingRequests}</span>}
-                        </Link>
-                    )}
-                    {hasPermission('assign-role') && (
-                        <Link to="/admin/users/new" className="site-nav-link">
-                            <UserPlus size={16} aria-hidden="true" /> Add User
-                        </Link>
-                    )}
-                </nav>
+                        {isAuthenticated && (
+                            <a href="/?mine=1" className="site-nav-link" onClick={handleMySubmissions}>
+                                <FolderOpen size={15} aria-hidden="true" /> My Submissions
+                            </a>
+                        )}
+                        {hasPermission('create-submission') && (
+                            <Link to="/submission/new" className="site-nav-link">
+                                <FilePlus size={15} aria-hidden="true" /> New Submission
+                            </Link>
+                        )}
+                        {isReviewer && (
+                            <Link to="/review" className="site-nav-link">
+                                <ClipboardCheck size={15} aria-hidden="true" /> Review
+                                {awaitingReview > 0 && <span className="nav-count" aria-label={`${awaitingReview} waiting`}>{awaitingReview}</span>}
+                            </Link>
+                        )}
+                        {isAdmin && (
+                            <Link to="/admin/registrations" className="site-nav-link">
+                                <UserCheck size={15} aria-hidden="true" /> Requests
+                                {pendingRequests > 0 && <span className="nav-count" aria-label={`${pendingRequests} waiting`}>{pendingRequests}</span>}
+                            </Link>
+                        )}
+                        {hasPermission('assign-role') && (
+                            <Link to="/admin/users/new" className="site-nav-link">
+                                <UserPlus size={15} aria-hidden="true" /> Add User
+                            </Link>
+                        )}
+                    </nav>
 
-                <div className="site-account">
-                    <img
-                        src={site.flag_url}
-                        alt={site.flag_url === NATIONAL_SITE.flag_url ? 'South African flag' : `${site.province} flag`}
-                        className="site-flag"
-                        onError={fallBackTo(NATIONAL_SITE.flag_url, 'South African flag')}
-                    />
-                    {isAuthenticated ? (
-                        <>
-                            <span className="site-signed-in">Signed in as <strong>{user.name}</strong></span>
-                            <button type="button" className="btn btn-outline site-account-btn" onClick={handleLogout}>Log out</button>
-                        </>
-                    ) : (
-                        <Link to="/login" className="btn btn-outline site-account-btn">Log in</Link>
-                    )}
+                    <div className="site-account">
+                        {isAuthenticated ? (
+                            <>
+                                <span className="site-signed-in">Signed in as <strong>{user.name}</strong></span>
+                                <button type="button" className="site-account-btn" onClick={handleLogout}>
+                                    Log out <LogOut size={14} aria-hidden="true" />
+                                </button>
+                            </>
+                        ) : (
+                            <Link to="/login" className="site-account-btn">
+                                Log in <LogIn size={14} aria-hidden="true" />
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </div>
         </header>
