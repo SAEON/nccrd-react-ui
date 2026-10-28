@@ -579,8 +579,8 @@ const SubmissionForm = () => {
                                 value={formData.geo_location?.coordinates?.[0] ?? ''}
                                 onChange={(e) => {
                                     const lon = parseFloat(e.target.value);
-                                    const lat = formData.geo_location?.coordinates?.[1] ?? -27.936;
-                                    handleGeoChange('coordinates', [Number.isFinite(lon) ? lon : 0, lat]);
+                                    const lat = formData.geo_location?.coordinates?.[1] ?? null;
+                                    handleGeoChange('coordinates', [Number.isFinite(lon) ? lon : null, lat]);
                                 }}
                             />
                         </Field>
@@ -591,8 +591,8 @@ const SubmissionForm = () => {
                                 value={formData.geo_location?.coordinates?.[1] ?? ''}
                                 onChange={(e) => {
                                     const lat = parseFloat(e.target.value);
-                                    const lon = formData.geo_location?.coordinates?.[0] ?? 30.374;
-                                    handleGeoChange('coordinates', [lon, Number.isFinite(lat) ? lat : 0]);
+                                    const lon = formData.geo_location?.coordinates?.[0] ?? null;
+                                    handleGeoChange('coordinates', [lon, Number.isFinite(lat) ? lat : null]);
                                 }}
                             />
                         </Field>
