@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { registerAccount } from '../services/api';
+import { useSite } from '../context/SiteContext';
 
 const FIELDS = [
     { id: 'name', label: 'Full name', type: 'text', autoComplete: 'name' },
@@ -15,6 +16,7 @@ const FIELDS = [
 ];
 
 const Register = () => {
+    const site = useSite();
     const [form, setForm] = useState({ name: '', email: '', organisation: '', password: '', confirm: '', note: '' });
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -41,17 +43,17 @@ const Register = () => {
     };
 
     if (done) return (
-        <div className="container" style={{ maxWidth: '30rem', padding: '4rem 1rem' }}>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Request sent</h1>
+        <div className="container form-card" style={{ maxWidth: '30rem' }}>
+            <h1>Request sent</h1>
             <p role="status">{done}</p>
             <p style={{ marginTop: '1.5rem' }}><Link to="/login">Go to log in</Link></p>
         </div>
     );
 
     return (
-        <div className="container" style={{ maxWidth: '30rem', padding: '4rem 1rem' }}>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Request an account</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+        <div className="container form-card" style={{ maxWidth: '30rem' }}>
+            <h1>Request an account</h1>
+            <p className="form-lede">
                 You need an account to submit projects. An administrator reviews each request; you can log in once yours is approved.
             </p>
             <form onSubmit={handleSubmit}>
@@ -62,7 +64,7 @@ const Register = () => {
                     </div>
                 ))}
                 <div className="mb-6">
-                    <label className="input-label" htmlFor="register-note">What will you use the NCCRD for? (optional)</label>
+                    <label className="input-label" htmlFor="register-note">What will you use the {site.short_title} for? (optional)</label>
                     <textarea id="register-note" className="input-field" rows={3} value={form.note} onChange={set('note')} maxLength={2000} />
                 </div>
                 {error && (
@@ -72,7 +74,7 @@ const Register = () => {
                     {submitting ? 'Sending…' : 'Request account'}
                 </button>
             </form>
-            <p style={{ marginTop: '1.5rem', fontSize: '0.85rem' }}>
+            <p className="form-foot">
                 Already have an account? <Link to="/login">Log in</Link>
             </p>
         </div>

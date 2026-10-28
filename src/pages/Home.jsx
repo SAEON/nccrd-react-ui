@@ -401,7 +401,7 @@ const Home = () => {
                             <FileText size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Data Reports</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>View progress on South Africa&apos;s climate change response.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>View progress on {regionPossessive(site)} climate change response.</p>
                         <Link to="/reports" className="card-btn">
                             VIEW REPORTS
                         </Link>
@@ -413,7 +413,7 @@ const Home = () => {
                             <UploadCloud size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Contribute</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation&apos;s climate change projects to the national database.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation&apos;s climate change projects to the {site.is_default ? 'national database' : site.short_title}.</p>
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {hasPermission('create-submission') && (
                                 <Link to="/submission/new" className="card-btn" style={{ background: 'var(--accent-primary)', color: 'white', border: 'none' }}>
@@ -438,7 +438,7 @@ const Home = () => {
                             <Compass size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Search Data</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Explore, filter and download detailed project data across all sectors and regions.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Explore, filter and download detailed project data across all sectors{site.province ? '' : ' and regions'}.</p>
                         <button
                             className="card-btn"
                             onClick={() => document.getElementById('project-directory')?.scrollIntoView({ behavior: 'smooth' })}
@@ -458,7 +458,7 @@ const Home = () => {
                             <Database size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats.total}</div>
+                            <div className="stat-val">{stats.total.toLocaleString()}</div>
                             <div className="stat-label">Total Projects</div>
                         </div>
                     </div>
@@ -467,7 +467,7 @@ const Home = () => {
                             <Zap size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats.Mitigation || 0}</div>
+                            <div className="stat-val">{(stats.Mitigation || 0).toLocaleString()}</div>
                             <div className="stat-label">Mitigation</div>
                         </div>
                     </div>
@@ -476,7 +476,7 @@ const Home = () => {
                             <Leaf size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats.Adaptation || 0}</div>
+                            <div className="stat-val">{(stats.Adaptation || 0).toLocaleString()}</div>
                             <div className="stat-label">Adaptation</div>
                         </div>
                     </div>
@@ -485,7 +485,7 @@ const Home = () => {
                             <GitMerge size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats['Cross Cutting'] || 0}</div>
+                            <div className="stat-val">{(stats['Cross Cutting'] || 0).toLocaleString()}</div>
                             <div className="stat-label">Cross Cutting</div>
                         </div>
                     </div>
@@ -840,7 +840,7 @@ const Home = () => {
                                 <h3 style={{ fontSize: '1.4rem', margin: 0 }}>Results</h3>
                                 {!error && !(loading && submissions.length === 0) && (
                                     <span className="badge badge-success">
-                                        {submissions.length} project{submissions.length !== 1 ? 's' : ''}
+                                        {submissions.length.toLocaleString()} project{submissions.length !== 1 ? 's' : ''}
                                     </span>
                                 )}
                             </div>

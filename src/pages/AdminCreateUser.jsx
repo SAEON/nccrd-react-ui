@@ -39,7 +39,7 @@ const AdminCreateUser = () => {
 
     if (!canAssignRole) {
         return (
-            <div className="container" style={{ maxWidth: '30rem', padding: '4rem 1rem' }}>
+            <div className="container form-card" style={{ maxWidth: '30rem' }}>
                 <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>Add user</h1>
                 <p style={{ color: 'var(--text-muted)' }}>
                     You don&apos;t have permission to create users. Contact an administrator.
@@ -71,7 +71,7 @@ const AdminCreateUser = () => {
     };
 
     return (
-        <div className="container" style={{ maxWidth: '30rem', padding: '4rem 1rem' }}>
+        <div className="container form-card" style={{ maxWidth: '30rem' }}>
             <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Add user</h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                 Creates an account with a one-time temporary password. Share it with the
@@ -164,7 +164,7 @@ const AdminCreateUser = () => {
                         {error}
                     </p>
                 )}
-                <button type="submit" className="btn btn-outline" disabled={submitting} style={{ width: '100%' }}>
+                <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%' }}>
                     {submitting ? 'Creating…' : 'Create user'}
                 </button>
             </form>

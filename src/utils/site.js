@@ -32,3 +32,19 @@ export const themeVariables = (theme) => Object.entries(theme || {})
 
 /** "South Africa’s", or the province site's "Mpumalanga’s". */
 export const regionPossessive = (site) => `${site.province || 'South Africa'}’s`;
+
+/**
+ * Each province's extent, [[south, west], [north, east]], roughly: a province
+ * site's maps open on its province rather than the whole country.
+ */
+export const PROVINCE_BOUNDS = {
+    'Eastern Cape': [[-34.2, 22.7], [-30.0, 30.2]],
+    'Free State': [[-30.7, 24.3], [-26.6, 29.8]],
+    Gauteng: [[-26.9, 27.1], [-25.1, 28.9]],
+    'KwaZulu-Natal': [[-31.1, 28.8], [-26.8, 32.9]],
+    Limpopo: [[-25.0, 26.4], [-22.1, 31.9]],
+    Mpumalanga: [[-27.5, 28.2], [-24.4, 32.0]],
+    'Northern Cape': [[-32.9, 16.4], [-24.7, 25.6]],
+    'North West': [[-28.0, 22.6], [-24.6, 28.3]],
+    'Western Cape': [[-34.8, 17.8], [-31.0, 24.2]],
+};

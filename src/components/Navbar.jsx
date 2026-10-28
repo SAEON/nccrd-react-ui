@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Home, Search, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut } from 'lucide-react';
+import { Home, Search, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
 import { NATIONAL_SITE } from '../utils/site';
@@ -70,7 +70,7 @@ const Navbar = () => {
 
     return (
         <header className="site-header">
-            {/* Masthead: DFFE (and the province's emblem), the site's name, its flag. */}
+            {/* Masthead: DFFE (and the province's emblem), the site's name, the account and the flag. */}
             <div className="container site-masthead">
                 <Link to="/" className="brand" aria-label={`${site.short_title} home`}>
                     <img src="/dffe-logo.jpg" className="brand-logo" alt={DFFE_LOGO_ALT} />
@@ -85,15 +85,35 @@ const Navbar = () => {
                     )}
                 </Link>
                 <Link to="/" className="site-title">{site.title}</Link>
-                <img
-                    src={site.flag_url}
-                    alt={site.flag_url === NATIONAL_SITE.flag_url ? 'South African flag' : `${site.province} flag`}
-                    className="site-flag"
-                    onError={fallBackTo(NATIONAL_SITE.flag_url, 'South African flag')}
-                />
+                <div className="site-masthead-end">
+                    <div className="site-account">
+                        {isAuthenticated ? (
+                            <>
+                                <span className="site-signed-in">
+                                    <CircleUser size={15} aria-hidden="true" />
+                                    <span className="sr-only">Signed in as </span>
+                                    <strong>{user.name}</strong>
+                                </span>
+                                <button type="button" className="site-account-btn" onClick={handleLogout}>
+                                    Log out <LogOut size={14} aria-hidden="true" />
+                                </button>
+                            </>
+                        ) : (
+                            <Link to="/login" className="site-account-btn">
+                                Log in <LogIn size={14} aria-hidden="true" />
+                            </Link>
+                        )}
+                    </div>
+                    <img
+                        src={site.flag_url}
+                        alt={site.flag_url === NATIONAL_SITE.flag_url ? 'South African flag' : `${site.province} flag`}
+                        className="site-flag"
+                        onError={fallBackTo(NATIONAL_SITE.flag_url, 'South African flag')}
+                    />
+                </div>
             </div>
 
-            {/* A slim bar in the site's colour: the pages, then the account. */}
+            {/* A slim bar in the site's colour with the pages. */}
             <div className="site-navbar">
                 <div className="container site-navbar-inner">
                     <nav className="site-nav" aria-label="Main">
@@ -134,21 +154,6 @@ const Navbar = () => {
                             </Link>
                         )}
                     </nav>
-
-                    <div className="site-account">
-                        {isAuthenticated ? (
-                            <>
-                                <span className="site-signed-in">Signed in as <strong>{user.name}</strong></span>
-                                <button type="button" className="site-account-btn" onClick={handleLogout}>
-                                    Log out <LogOut size={14} aria-hidden="true" />
-                                </button>
-                            </>
-                        ) : (
-                            <Link to="/login" className="site-account-btn">
-                                Log in <LogIn size={14} aria-hidden="true" />
-                            </Link>
-                        )}
-                    </div>
                 </div>
             </div>
         </header>

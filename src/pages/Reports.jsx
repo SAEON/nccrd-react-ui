@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { getFacets, getReportSummary, getReportQuality, getReportLocations, reportExportUrl } from '../services/api';
 import FacetSelect from '../components/FacetSelect';
+import { useSite } from '../context/SiteContext';
 import BarList from '../components/report/BarList';
 import StackedBars from '../components/report/StackedBars';
 import StackedColumns from '../components/report/StackedColumns';
@@ -57,6 +58,7 @@ const StatTile = ({ label, value, note, hero = false }) => (
 );
 
 const Reports = () => {
+    const site = useSite();
     const [province, setProvince] = useState('');
     const [type, setType] = useState('');
     const [provinces, setProvinces] = useState([]);
@@ -97,7 +99,7 @@ const Reports = () => {
     }, [paramsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const scopeText = [
-        province ? (PROVINCE_LABELS[province] ?? province) : 'All provinces',
+        site.province ?? (province ? (PROVINCE_LABELS[province] ?? province) : 'All provinces'),
         type || 'All project types',
     ].join(' · ');
     const total = summary?.total ?? 0;
@@ -109,7 +111,7 @@ const Reports = () => {
             <header className="report-header">
                 <h1>Data reports</h1>
                 <p className="report-lede">
-                    Climate change response projects recorded in the National Climate Change Response Database.
+                    Climate change response projects recorded in the {site.title}.
                 </p>
                 <p className="report-scope">
                     {scopeText} · Generated {new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -119,15 +121,18 @@ const Reports = () => {
             {/* ── Filters + actions (hidden when printing) ───────────────── */}
             <div className="glass-panel report-controls no-print">
                 <div className="report-filters">
-                    <FacetSelect
-                        id="report-province"
-                        label="Province"
-                        value={province}
-                        options={provinces}
-                        labels={PROVINCE_LABELS}
-                        pinned={['National']}
-                        onChange={setProvince}
-                    />
+                    {/* A province site reports on its own province only. */}
+                    {!site.province && (
+                        <FacetSelect
+                            id="report-province"
+                            label="Province"
+                            value={province}
+                            options={provinces}
+                            labels={PROVINCE_LABELS}
+                            pinned={['National']}
+                            onChange={setProvince}
+                        />
+                    )}
                     <FacetSelect id="report-type" label="Project type" value={type} options={TYPES} onChange={setType} />
                 </div>
                 <div className="report-actions">

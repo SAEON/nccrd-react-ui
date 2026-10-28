@@ -8,6 +8,7 @@ import {
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { ArrowLeft, Save, Activity, AlertTriangle, FileDown, Paperclip, X, History } from 'lucide-react';
 import { sanitizePayload, normalizeGeoLocation } from '../utils/submissionPayload';
+import { typeTextColor } from '../utils/typeColors';
 import { draftKey, loadDraft, saveDraft, clearDraft } from '../utils/draftStorage';
 import ReauthModal from '../components/ReauthModal';
 import { canEditSubmission, isCurator, reviewState } from '../utils/reviewStatus';
@@ -420,7 +421,7 @@ const SubmissionForm = () => {
                         background: 'rgba(245,158,11,0.08)',
                         marginBottom: '1.5rem',
                     }}>
-                        <AlertTriangle size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                        <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
                         <div style={{ flex: 1, minWidth: '14rem', fontSize: '0.9rem' }}>
                             <strong>{conflict.updatedby || 'Someone else'}</strong> saved this project at{' '}
                             {formatWhen(conflict.updatedate)}, after you opened it. Saving now would replace their changes.
@@ -456,8 +457,8 @@ const SubmissionForm = () => {
                         background: 'rgba(239,68,68,0.07)',
                         marginBottom: '1.5rem',
                     }}>
-                        <AlertTriangle size={18} color="#f87171" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-                        <span style={{ color: '#fca5a5', fontSize: '0.9rem' }}>{error}</span>
+                        <AlertTriangle size={18} color="#dc2626" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                        <span role="alert" style={{ color: '#b91c1c', fontSize: '0.9rem' }}>{error}</span>
                     </div>
                 )}
 
@@ -773,7 +774,7 @@ const SubmissionForm = () => {
                     {/* ── Mitigation Details ─────────────────────────────────── */}
                     {showMitigation && (
                         <div className="mt-8 glass-panel animate-fade-in" style={{ padding: '1.5rem', border: '1px solid rgba(251,191,36,0.2)' }}>
-                            <h3 className="mb-5" style={{ color: '#fbbf24' }}>Mitigation Details</h3>
+                            <h3 className="mb-5" style={{ color: typeTextColor('Mitigation') }}>Mitigation Details</h3>
                             <div className="grid grid-cols-2 gap-6">
 
                                 <Field label="Mitigation Sector" required>
@@ -931,7 +932,7 @@ const SubmissionForm = () => {
                     {/* ── Adaptation Details ─────────────────────────────────── */}
                     {showAdaptation && (
                         <div className="mt-8 glass-panel animate-fade-in" style={{ padding: '1.5rem', border: '1px solid rgba(52,211,153,0.2)' }}>
-                            <h3 className="mb-5" style={{ color: '#34d399' }}>Adaptation Details</h3>
+                            <h3 className="mb-5" style={{ color: typeTextColor('Adaptation') }}>Adaptation Details</h3>
                             <div className="grid grid-cols-2 gap-6">
 
                                 <Field label="Adaptation Sector" required>
