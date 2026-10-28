@@ -11,12 +11,17 @@ import { sanitizePayload, normalizeGeoLocation } from '../utils/submissionPayloa
 import { typeTextColor } from '../utils/typeColors';
 import { draftKey, loadDraft, saveDraft, clearDraft } from '../utils/draftStorage';
 import ReauthModal from '../components/ReauthModal';
+import ConsentCheck from '../components/ConsentCheck';
 import { canEditSubmission, isCurator, reviewState } from '../utils/reviewStatus';
 import { Field, TextInput, NestedField, RegionSelect, VocabularySelect, SectionHeading } from '../components/form/FormFields';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
+/** The project manager's contact details: personal information (POPIA). */
+const CONTACT_FIELDS = ['project_manager_name', 'project_manager_email', 'project_manager_contact_number'];
+const contactOf = (data) => Object.fromEntries(CONTACT_FIELDS.map((f) => [f, String(data?.[f] ?? '').trim()]));
+
 const SubmissionForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -31,6 +36,7 @@ const SubmissionForm = () => {
     // `updatedate` of the version being edited, sent back on save so the API
     // can refuse to overwrite a newer edit by someone else (HTTP 409).
     const [baseUpdatedate, setBaseUpdatedate] = useState(null);
+    const [savedContact, setSavedContact] = useState(null);  // the stored contact, when editing
     const [draftOffer, setDraftOffer] = useState(null);     // unsaved draft found on open
     const [autosaveReady, setAutosaveReady] = useState(false);
     const [draftChecked, setDraftChecked] = useState(false);
@@ -77,6 +83,7 @@ const SubmissionForm = () => {
         project_manager_organization: '',
         project_manager_email: '',
         project_manager_contact_number: '',
+        contact_consent: false,
         research: '',
         platform: '',
         mitigation_data: null,
@@ -194,6 +201,7 @@ const SubmissionForm = () => {
                 if (data.end_date) data.end_date = new Date(data.end_date).toISOString().split('T')[0];
 
                 setBaseUpdatedate(data.updatedate ?? null);
+                setSavedContact(contactOf(data));
                 setLoadedState(reviewState(data));
                 setFormData({
                     ...data,
@@ -205,6 +213,7 @@ const SubmissionForm = () => {
                     funding_type: data.funding_type || '',
                     funding_amount: data.funding_amount ?? '',
                     geo_location: normalizeGeoLocation(data.geo_location),
+                    contact_consent: Boolean(data.contact_consent_at),
                 });
             }
         } catch (err) {
@@ -261,10 +270,21 @@ const SubmissionForm = () => {
         setAutosaveReady(true);
     };
 
+    // Giving or changing the contact needs the submitter's confirmation that the
+    // manager agreed (the API checks the same); clearing it, or keeping the
+    // stored one, doesn't.
+    const contact = contactOf(formData);
+    const contactChanged = CONTACT_FIELDS.some((f) => contact[f] && contact[f] !== (savedContact?.[f] ?? ''));
+
     // ── Field change handlers ───────────────────────────────────────────────
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+            // A different contact needs the submitter's confirmation again.
+            ...(CONTACT_FIELDS.includes(name) ? { contact_consent: false } : {}),
+        }));
     };
 
     const handleNestedChange = (e, section) => {
@@ -677,6 +697,22 @@ const SubmissionForm = () => {
                         <Field label="Contact Number">
                             <TextInput name="project_manager_contact_number" value={formData.project_manager_contact_number} onChange={handleChange} placeholder="e.g. 082 123 4567" />
                         </Field>
+
+                        <div className="col-span-2">
+                            <p className="form-help">
+                                The project manager&apos;s name and organisation are shown with the project. Their email
+                                and phone number are seen only by you and the DFFE reviewers.
+                            </p>
+                            <ConsentCheck
+                                id="contact-consent"
+                                checked={Boolean(formData.contact_consent)}
+                                onChange={(v) => setFormData((prev) => ({ ...prev, contact_consent: v }))}
+                                required={contactChanged}
+                            >
+                                The project manager has agreed that DFFE may hold their contact details to verify this
+                                project and follow up on its progress.
+                            </ConsentCheck>
+                        </div>
 
                         {/* ── Additional Information ────────────────────── */}
                         <SectionHeading title="Additional Information" />

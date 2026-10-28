@@ -378,13 +378,15 @@ export const getTenants = async () => {
  * so it includes the multipart boundary string.
  *
  * @param {File} file - The .xlsx file selected by the user
+ * @param {boolean} [options.contactConsent] - The uploader confirms the project
+ *   managers listed agreed to their contact details being held (POPIA)
  */
-export const uploadBulkSubmissions = async (file) => {
+export const uploadBulkSubmissions = async (file, { contactConsent = false } = {}) => {
     const formData = new FormData();
     formData.append('file', file);
 
     const res = await _fetch(
-        `${API_BASE_URL}/submission/create_submission_upload-xlsx/`,
+        `${API_BASE_URL}/submission/create_submission_upload-xlsx/?contact_consent=${contactConsent}`,
         { method: 'POST', headers: { ..._authHeaders() }, body: formData }
     );
     if (!res.ok) await _throwOnErrorWithAuthCheck(res);

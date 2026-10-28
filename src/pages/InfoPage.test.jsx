@@ -41,6 +41,13 @@ describe('InfoPage', () => {
         expect(container.querySelectorAll('br').length).toBeGreaterThan(3);
     });
 
+    it('has a privacy notice naming who holds what, who sees it and where to complain', () => {
+        renderPage('paia-popia');
+        expect(document.getElementById('privacy')).toHaveTextContent(/email address and\s+phone number are seen only by/);
+        expect(screen.getByRole('link', { name: 'nccrd@environment.gov.za' })).toHaveAttribute('href', 'mailto:nccrd@environment.gov.za');
+        expect(screen.getByRole('link', { name: 'Information Regulator' })).toHaveAttribute('href', 'https://inforegulator.org.za/');
+    });
+
     it('links the PAIA manual directly and explains browser storage', () => {
         renderPage('paia-popia');
         expect(screen.getByRole('link', { name: /PAIA and POPIA manuals/ }))

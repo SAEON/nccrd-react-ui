@@ -130,4 +130,18 @@ describe('SubmissionForm safe capture', () => {
         await screen.findByText('Saved page');
         expect(updateSubmission.mock.calls[0][1].geo_location).toMatchObject({ province: 'WC', district: 'CPT' });
     });
+
+    it('asks for the project manager\'s agreement only when the contact is new or changed', async () => {
+        getSubmissionById.mockResolvedValueOnce({
+            ...LOADED, project_manager_name: 'A Manager', project_manager_email: 'manager@example.org',
+            contact_consent_at: null,
+        });
+        renderForm();
+        const consent = await screen.findByRole('checkbox', { name: /project manager has agreed/ });
+        expect(consent).not.toBeRequired();          // the stored contact, unchanged
+
+        fireEvent.change(screen.getByDisplayValue('manager@example.org'), { target: { value: 'new@example.org' } });
+        expect(consent).toBeRequired();
+        expect(consent).not.toBeChecked();
+    });
 });

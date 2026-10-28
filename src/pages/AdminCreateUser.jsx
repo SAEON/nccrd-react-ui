@@ -77,6 +77,10 @@ const AdminCreateUser = () => {
                 Creates an account with a one-time temporary password. Share it with the
                 new user directly — it can&apos;t be retrieved again after this page.
             </p>
+            <p className="form-help">
+                Only add someone who expects an account, and tell them DFFE holds their name and email to run it
+                (see the <Link to="/paia-popia#privacy">privacy notice</Link>).
+            </p>
 
             {created && (
                 <div

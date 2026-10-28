@@ -73,7 +73,7 @@ export function sanitizePayload(raw) {
         'deletedate', 'deletedby', 'createdate', 'createdby',
         'updatedate', 'updatedby', 'submission_status', 'issubmitted',
         'submission_comments', 'submission_status_updated_by', 'reviewed_by',
-        '_id'];
+        'contact_consent_at', '_id'];
     RESPONSE_ONLY.forEach((f) => delete payload[f]);
 
     return payload;

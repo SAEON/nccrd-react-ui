@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { uploadBulkSubmissions, UPLOAD_TEMPLATE_URL } from '../services/api';
+import ConsentCheck from './ConsentCheck';
 import { Upload, UploadCloud, X, AlertTriangle, CheckCircle2, Activity } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
     // result: null | { type: 'success', message } | { type: 'error', message, errors[] }
     const [result, setResult] = useState(null);
     const [dragOver, setDragOver] = useState(false);
+    const [contactConsent, setContactConsent] = useState(false);
 
     const handleFile = (f) => {
         if (!f) return;
@@ -36,7 +38,7 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
         setUploading(true);
         setResult(null);
         try {
-            const data = await uploadBulkSubmissions(file);
+            const data = await uploadBulkSubmissions(file, { contactConsent });
             setResult({ type: 'success', message: data.detail || 'Upload successful.' });
             onSuccess();
         } catch (err) {
@@ -200,12 +202,17 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
                     </div>
                 )}
 
+                <ConsentCheck id="upload-consent" checked={contactConsent} onChange={setContactConsent}>
+                    The project managers listed in this file have agreed that DFFE may hold their contact details to
+                    verify these projects and follow up on their progress.
+                </ConsentCheck>
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                     <button className="btn btn-outline" onClick={onClose}>Cancel</button>
                     <button
                         className="btn btn-primary"
                         onClick={handleUpload}
-                        disabled={!file || uploading}
+                        disabled={!file || !contactConsent || uploading}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
                         {uploading
