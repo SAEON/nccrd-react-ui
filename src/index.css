@@ -848,9 +848,6 @@ p {
   .pd-row { grid-template-columns: 1fr; gap: 0.1rem; }
 }
 
-/* Site header (components/Navbar.jsx): the official DFFE logo, links, account.
-   Wide screens: one row. Narrower: brand and account on top, links below,
-   wrapping as needed (never a sideways scroll). */
 /* Site header (components/Navbar.jsx): a masthead with the logos, the site's
    name and its flag, over a slim bar in the site's colour with the pages and
    the account, as on the legacy sites. */
@@ -880,16 +877,17 @@ p {
 .site-nav-link:hover, .site-nav-link:focus-visible { color: #fff; border-bottom-color: rgba(255, 255, 255, 0.75); }
 .site-navbar a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .site-nav .nav-count { margin-left: 0.1rem; padding: 0.05rem 0.45rem; font-weight: 700; }
-.site-account { display: flex; align-items: center; gap: 0.75rem; }
-.site-signed-in { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
-.site-signed-in strong { color: var(--text-primary); font-weight: 600; }
+.site-account { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
+.site-signed-in { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: rgba(255, 255, 255, 0.8); white-space: nowrap; }
+.site-signed-in strong { color: #fff; font-weight: 600; }
 .site-account-btn {
-  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.85rem;
-  border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: transparent;
-  color: var(--accent-primary); font: inherit; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.6); border-radius: var(--radius-sm); background: transparent;
+  color: #fff; font: inherit; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
   text-transform: uppercase; text-decoration: none; cursor: pointer;
 }
-.site-account-btn:hover { background: var(--accent-surface); border-color: var(--accent-primary); }
+.site-account-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: #fff; }
+.site-account-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 @media (max-width: 675px) {
   .site-masthead { grid-template-columns: 1fr auto; grid-template-areas: "brand end" "title title"; }
   .site-title { max-width: none; text-align: left; font-size: 1.1rem; }
@@ -926,3 +924,9 @@ p {
 .consent-label { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); cursor: pointer; }
 .consent-label input { flex: none; margin-top: 0.25rem; width: 1rem; height: 1rem; accent-color: var(--accent-primary); }
 .form-help { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.9rem; }
+
+/* Keyword search above the results (pages/Home.jsx) */
+.results-search { position: relative; display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+.results-search .input-field { flex: 1; min-width: 0; padding-left: 2.5rem; font-size: 1rem; }
+.results-search-icon { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.results-search .btn { flex: none; }

@@ -602,35 +602,6 @@ const Home = () => {
                                 </label>
                             )}
 
-                            {/* ── Full-text keyword search ─────────────────── */}
-                            <form style={{ marginBottom: '0.5rem' }} onSubmit={handleSearch}>
-                                <label className="input-label" htmlFor="search-keywords">Keywords</label>
-                                <div style={{ position: 'relative' }}>
-                                    <input
-                                        id="search-keywords"
-                                        type="text"
-                                        className="input-field"
-                                        placeholder="Search by title…"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        style={{ paddingRight: '2.5rem' }}
-                                    />
-                                    <button
-                                        type="submit"
-                                        aria-label="Search"
-                                        style={{
-                                            position: 'absolute', right: '5px', top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            background: 'none', border: 'none',
-                                            cursor: 'pointer', color: 'var(--accent-primary)',
-                                            padding: '0.5rem',
-                                        }}
-                                    >
-                                        <Search size={15} />
-                                    </button>
-                                </div>
-                            </form>
-
                             {/* ══════════════════════════════════════════════
                                 ACCORDION GROUP 1: Project Filters
                                 ══════════════════════════════════════════════ */}
@@ -835,6 +806,20 @@ const Home = () => {
                         Results list
                         ══════════════════════════════════════════════════════════ */}
                     <div style={{ flexGrow: 1, minWidth: 0 }}>
+                        {/* Full-text keyword search, above the results it narrows */}
+                        <form className="results-search" role="search" onSubmit={handleSearch}>
+                            <label className="sr-only" htmlFor="search-keywords">Search projects</label>
+                            <Search size={18} className="results-search-icon" aria-hidden="true" />
+                            <input
+                                id="search-keywords"
+                                type="search"
+                                className="input-field"
+                                placeholder="Search projects by title…"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <button type="submit" className="btn btn-primary">Search</button>
+                        </form>
                         <div className="flex justify-between items-center" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                             <div className="flex items-center" style={{ gap: '0.75rem' }}>
                                 <h3 style={{ fontSize: '1.4rem', margin: 0 }}>Results</h3>
