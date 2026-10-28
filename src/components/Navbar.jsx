@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Home, Search, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
+import { Home, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
 import { NATIONAL_SITE } from '../utils/site';
@@ -43,29 +43,10 @@ const Navbar = () => {
         navigate('/');
     };
 
-    /**
-     * If the project-directory section exists in the DOM we're already on the
-     * Home page — scroll there directly.  Otherwise navigate to "/" first and
-     * wait two animation frames for React to render the page before scrolling.
-     */
     /** Open the project list filtered to the user's own submissions (Home reads `?mine=1`). */
     const handleMySubmissions = (e) => {
         e.preventDefault();
         navigate('/?mine=1');
-    };
-
-    const handleSearchData = () => {
-        const el = document.getElementById('project-directory');
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            navigate('/');
-            requestAnimationFrame(() =>
-                requestAnimationFrame(() =>
-                    document.getElementById('project-directory')?.scrollIntoView({ behavior: 'smooth' })
-                )
-            );
-        }
     };
 
     return (
@@ -102,9 +83,6 @@ const Navbar = () => {
                         <Link to="/" className="site-nav-link">
                             <Home size={15} aria-hidden="true" /> Home
                         </Link>
-                        <a href="/" className="site-nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
-                            <Search size={15} aria-hidden="true" /> Search Data
-                        </a>
                         <Link to="/reports" className="site-nav-link">
                             <BarChart3 size={15} aria-hidden="true" /> Data Reports
                         </Link>
