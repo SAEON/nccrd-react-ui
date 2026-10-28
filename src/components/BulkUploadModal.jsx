@@ -40,6 +40,7 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
         try {
             const data = await uploadBulkSubmissions(file, { contactConsent });
             setResult({ type: 'success', message: data.detail || 'Upload successful.' });
+            setFile(null); // so the same workbook isn't sent twice
             onSuccess();
         } catch (err) {
             const detail = err.detail;
@@ -192,7 +193,7 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
                                                 <td style={{ padding: '0.4rem 0.6rem' }}>{err.row ?? '—'}</td>
                                                 <td style={{ padding: '0.4rem 0.6rem' }}>{err.column ?? '—'}</td>
                                                 <td style={{ padding: '0.4rem 0.6rem', fontFamily: 'monospace' }}>{String(err.value ?? '')}</td>
-                                                <td style={{ padding: '0.4rem 0.6rem' }}>{err.message}</td>
+                                                <td style={{ padding: '0.4rem 0.6rem' }}>{err.message ?? err.error}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -208,7 +209,7 @@ const BulkUploadModal = ({ onClose, onSuccess }) => {
                 </ConsentCheck>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                    <button className="btn btn-outline" onClick={onClose}>Cancel</button>
+                    <button className="btn btn-outline" onClick={onClose}>{result?.type === 'success' ? 'Close' : 'Cancel'}</button>
                     <button
                         className="btn btn-primary"
                         onClick={handleUpload}

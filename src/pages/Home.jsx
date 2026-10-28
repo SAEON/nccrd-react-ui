@@ -364,11 +364,11 @@ const Home = () => {
     return (
         <div style={{ width: '100%' }}>
 
-            {/* ── Bulk upload modal ────────────────────────────────────────── */}
+            {/* ── Bulk upload modal: stays open after an upload to say what was created ── */}
             {showUploadModal && (
                 <BulkUploadModal
                     onClose={() => setShowUploadModal(false)}
-                    onSuccess={() => { setShowUploadModal(false); setReloadKey((k) => k + 1); }}
+                    onSuccess={() => setReloadKey((k) => k + 1)}
                 />
             )}
 
