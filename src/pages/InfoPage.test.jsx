@@ -21,12 +21,14 @@ describe('InfoPage', () => {
             front_matter: {
                 about: { title: 'Welcome to the Mpumalanga Climate Change Response Database', content: 'The platform is developed…' },
                 explore: { title: 'Explore climate mitigation and adaptation projects', content: 'The MCCRD is part of…' },
+                context: { title: 'Climate change in Mpumalanga', content: 'Mpumalanga mines most of…' },
             },
         });
         render(<MemoryRouter><SiteContext.Provider value={site}><InfoPage page="about" /></SiteContext.Provider></MemoryRouter>);
         expect(screen.getByRole('heading', { level: 1, name: 'About the MCCRD' })).toBeInTheDocument();
         expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
             'Welcome to the Mpumalanga Climate Change Response Database',
+            'Climate change in Mpumalanga',
             'Explore climate mitigation and adaptation projects',
         ]);
         expect(screen.queryByText(/National Climate Change Response Database/)).not.toBeInTheDocument();

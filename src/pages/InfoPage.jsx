@@ -84,8 +84,9 @@ const PAGES = {
     license: { title: 'Licence', content: <LicenceContent /> },
 };
 
-/** A site's own About texts, in the legacy sites' order. */
-const FRONT_MATTER_SECTIONS = ['about', 'explore', 'submit'];
+/** A site's own About texts: the legacy sites' three, with the province's own
+ *  section on climate change there (context) after the welcome. */
+const FRONT_MATTER_SECTIONS = ['about', 'context', 'explore', 'submit'];
 
 const FrontMatter = ({ sections }) => FRONT_MATTER_SECTIONS
     .filter((key) => sections[key]?.content)
