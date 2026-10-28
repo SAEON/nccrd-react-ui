@@ -9,6 +9,7 @@ import { useCurrentUser } from '../context/CurrentUserContext';
 import { ArrowLeft, Save, Activity, AlertTriangle, FileDown, Paperclip, X, History } from 'lucide-react';
 import { sanitizePayload, normalizeGeoLocation } from '../utils/submissionPayload';
 import { typeTextColor } from '../utils/typeColors';
+import { childrenOf, inGroup, topLevel } from '../utils/vocabulary';
 import { draftKey, loadDraft, saveDraft, clearDraft } from '../utils/draftStorage';
 import ReauthModal from '../components/ReauthModal';
 import ConsentCheck from '../components/ConsentCheck';
@@ -162,7 +163,8 @@ const SubmissionForm = () => {
     const VOCAB_TREES = [
         'budgetRanges', 'mitigationSectors', 'mitigationType', 'mitigationProgramme',
         'mitigationPolicies', 'coBenefits', 'cdmMethodology', 'executiveStatus',
-        'carbonCreditStandards', 'adaptationSectors', 'adaptationPolicies', 'hazards',
+        'carbonCreditStandards', 'carbonCreditVoluntaryOrganizations', 'adaptationSectors', 'adaptationPolicies',
+        'hazards',
     ];
     const [vocab, setVocab] = useState({});
 
@@ -295,9 +297,15 @@ const SubmissionForm = () => {
         }));
     };
 
-    /** VocabularySelect reports a plain value, not an event — bridge to handleNestedChange. */
-    const handleNestedVocabChange = (name, section) => (value) =>
+    /**
+     * VocabularySelect reports a plain value, not an event — bridge to
+     * handleNestedChange. `clears` are the fields that depend on this one
+     * (a sector's subsector), emptied when it changes.
+     */
+    const handleNestedVocabChange = (name, section, clears = []) => (value) => {
         handleNestedChange({ target: { name, value } }, section);
+        clears.forEach((dependent) => handleNestedChange({ target: { name: dependent, value: '' } }, section));
+    };
 
     // ── Submit ──────────────────────────────────────────────────────────────
     const handleSubmit = (e) => {
@@ -816,32 +824,47 @@ const SubmissionForm = () => {
                                 <Field label="Mitigation Sector" required>
                                     <VocabularySelect required
                                         value={formData.mitigation_data?.sector}
-                                        onChange={handleNestedVocabChange('sector', 'mitigation_data')}
-                                        options={vocab.mitigationSectors || []}
+                                        onChange={handleNestedVocabChange('sector', 'mitigation_data', ['subsector', 'secondary'])}
+                                        options={topLevel(vocab.mitigationSectors)}
                                     />
                                 </Field>
 
                                 <Field label="Subsector">
-                                    <NestedField section="mitigation_data" name="subsector"
-                                        value={formData.mitigation_data?.subsector} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.subsector}
+                                        onChange={handleNestedVocabChange('subsector', 'mitigation_data', ['secondary'])}
+                                        options={childrenOf(vocab.mitigationSectors, formData.mitigation_data?.sector)}
+                                        placeholder={formData.mitigation_data?.sector ? undefined : '-- Select a sector first --'}
+                                        disabled={!formData.mitigation_data?.sector}
+                                    />
                                 </Field>
 
                                 <Field label="Secondary">
-                                    <NestedField section="mitigation_data" name="secondary"
-                                        value={formData.mitigation_data?.secondary} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.secondary}
+                                        onChange={handleNestedVocabChange('secondary', 'mitigation_data')}
+                                        options={childrenOf(vocab.mitigationSectors, formData.mitigation_data?.subsector)}
+                                        placeholder={formData.mitigation_data?.subsector ? undefined : '-- Select a subsector first --'}
+                                        disabled={!formData.mitigation_data?.subsector}
+                                    />
                                 </Field>
 
                                 <Field label="Project Type">
                                     <VocabularySelect
                                         value={formData.mitigation_data?.project_type}
-                                        onChange={handleNestedVocabChange('project_type', 'mitigation_data')}
-                                        options={vocab.mitigationType || []}
+                                        onChange={handleNestedVocabChange('project_type', 'mitigation_data', ['project_subtype'])}
+                                        options={topLevel(vocab.mitigationType)}
                                     />
                                 </Field>
 
                                 <Field label="Project Subtype">
-                                    <NestedField section="mitigation_data" name="project_subtype"
-                                        value={formData.mitigation_data?.project_subtype} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.project_subtype}
+                                        onChange={handleNestedVocabChange('project_subtype', 'mitigation_data')}
+                                        options={childrenOf(vocab.mitigationType, formData.mitigation_data?.project_type)}
+                                        placeholder={formData.mitigation_data?.project_type ? undefined : '-- Select a project type first --'}
+                                        disabled={!formData.mitigation_data?.project_type}
+                                    />
                                 </Field>
 
                                 <Field label="Mitigation Programme">
@@ -856,13 +879,16 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.national_policy}
                                         onChange={handleNestedVocabChange('national_policy', 'mitigation_data')}
-                                        options={vocab.mitigationPolicies || []}
+                                        options={inGroup(vocab.mitigationPolicies, 'National policy')}
                                     />
                                 </Field>
 
                                 <Field label="Provincial / Municipal Policy">
-                                    <NestedField section="mitigation_data" name="provincial_municipal"
-                                        value={formData.mitigation_data?.provincial_municipal} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.provincial_municipal}
+                                        onChange={handleNestedVocabChange('provincial_municipal', 'mitigation_data')}
+                                        options={inGroup(vocab.mitigationPolicies, 'Regional policy')}
+                                    />
                                 </Field>
 
                                 <div className="col-span-2">
@@ -886,7 +912,7 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.environmental_co_benefit}
                                         onChange={handleNestedVocabChange('environmental_co_benefit', 'mitigation_data')}
-                                        options={vocab.coBenefits || []}
+                                        options={childrenOf(vocab.coBenefits, 'Environmental')}
                                     />
                                 </Field>
                                 <Field label="Environmental Co-benefit Description">
@@ -898,7 +924,7 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.social_co_benefit}
                                         onChange={handleNestedVocabChange('social_co_benefit', 'mitigation_data')}
-                                        options={vocab.coBenefits || []}
+                                        options={childrenOf(vocab.coBenefits, 'Social')}
                                     />
                                 </Field>
                                 <Field label="Social Co-benefit Description">
@@ -910,7 +936,7 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.economic_co_benefit}
                                         onChange={handleNestedVocabChange('economic_co_benefit', 'mitigation_data')}
-                                        options={vocab.coBenefits || []}
+                                        options={childrenOf(vocab.coBenefits, 'Economic')}
                                     />
                                 </Field>
                                 <Field label="Economic Co-benefit Description">
@@ -949,8 +975,11 @@ const SubmissionForm = () => {
                                 </Field>
 
                                 <Field label="Organization Issuing Credits">
-                                    <NestedField section="mitigation_data" name="organization_issuing_credits"
-                                        value={formData.mitigation_data?.organization_issuing_credits} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.organization_issuing_credits}
+                                        onChange={handleNestedVocabChange('organization_issuing_credits', 'mitigation_data')}
+                                        options={vocab.carbonCreditVoluntaryOrganizations || []}
+                                    />
                                 </Field>
                                 <Field label="Voluntary Methodology">
                                     <NestedField section="mitigation_data" name="voluntary_methodology"
@@ -991,13 +1020,16 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.adaptation_data?.national_policy}
                                         onChange={handleNestedVocabChange('national_policy', 'adaptation_data')}
-                                        options={vocab.adaptationPolicies || []}
+                                        options={inGroup(vocab.adaptationPolicies, 'National policy')}
                                     />
                                 </Field>
 
                                 <Field label="Provincial / Municipal Policy">
-                                    <NestedField section="adaptation_data" name="provincial_municipal"
-                                        value={formData.adaptation_data?.provincial_municipal} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.adaptation_data?.provincial_municipal}
+                                        onChange={handleNestedVocabChange('provincial_municipal', 'adaptation_data')}
+                                        options={inGroup(vocab.adaptationPolicies, 'Regional policy')}
+                                    />
                                 </Field>
 
                                 <div className="col-span-2">
