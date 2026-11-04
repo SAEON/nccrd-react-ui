@@ -8,6 +8,7 @@
  */
 
 import { getToken, clearToken } from './authStorage';
+import { SITE_PROVINCE_PARAM } from '../utils/site';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:2022';
 
@@ -15,11 +16,20 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:20
  * The site this page belongs to: its hostname, e.g. mccrd.environment.gov.za
  * or mccrd.localhost for the Mpumalanga site. The API may be on another host
  * (locally localhost:2022), so every request names the site whose projects,
- * reports and branding it wants.
+ * reports and branding it wants. ?siteprovince=mpumalanga in the page's URL
+ * names a province site on any host, and takes precedence.
  */
 const SITE = window.location.hostname;
+const SITE_PROVINCE = new URLSearchParams(window.location.search).get(SITE_PROVINCE_PARAM);
 
-const _fetch = (url, init = {}) => fetch(url, { ...init, headers: { 'X-NCCRD-Site': SITE, ...init.headers } });
+const _fetch = (url, init = {}) => fetch(url, {
+    ...init,
+    headers: {
+        'X-NCCRD-Site': SITE,
+        ...(SITE_PROVINCE && { 'X-NCCRD-Site-Province': SITE_PROVINCE }),
+        ...init.headers,
+    },
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -467,7 +477,9 @@ export const UPLOAD_TEMPLATE_URL = `${API_BASE_URL}/submission/upload_template`;
  * @param {'xlsx'|'csv'} format
  */
 export const reportExportUrl = (params = {}, format = 'xlsx') =>
-    `${API_BASE_URL}/report/export${_reportQuery({ ...params, format, site: SITE })}`;
+    `${API_BASE_URL}/report/export${_reportQuery({
+        ...params, format, site: SITE, ...(SITE_PROVINCE && { [SITE_PROVINCE_PARAM]: SITE_PROVINCE }),
+    })}`;
 
 /**
  * Download the filtered projects through fetch, so the request carries the

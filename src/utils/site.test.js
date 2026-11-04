@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { NATIONAL_SITE, regionPossessive, siteFrom, themeVariables } from './site';
+import { NATIONAL_SITE, provinceParam, regionPossessive, siteFrom, themeVariables } from './site';
+
+describe('provinceParam', () => {
+    it('writes a province as it appears in a URL', () => {
+        expect(provinceParam('Mpumalanga')).toBe('mpumalanga');
+        expect(provinceParam('Western Cape')).toBe('western-cape');
+        expect(provinceParam('KwaZulu-Natal')).toBe('kwazulu-natal');
+    });
+});
 
 describe('siteFrom', () => {
     it('keeps the national value for fields the site leaves empty', () => {

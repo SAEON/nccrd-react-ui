@@ -15,6 +15,12 @@ export const NATIONAL_SITE = {
     is_default: true,
 };
 
+/** The URL parameter naming a province site, e.g. ?siteprovince=mpumalanga. */
+export const SITE_PROVINCE_PARAM = 'siteprovince';
+
+/** "Mpumalanga" → "mpumalanga", "Western Cape" → "western-cape": its value in a URL. */
+export const provinceParam = (province) => province.trim().toLowerCase().replace(/\s+/g, '-');
+
 /** The site from GET /site, with the national value for each field it leaves empty. */
 export const siteFrom = (data) => ({
     ...NATIONAL_SITE,
