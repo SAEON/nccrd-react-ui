@@ -397,6 +397,46 @@ export const getTenants = async () => {
     return res.json();
 };
 
+/**
+ * People with accounts and their roles on the sites the caller manages
+ * (needs assign-role). `q` matches part of a name or email address; a
+ * province site's admin finds people outside their site by full email only.
+ */
+export const getUsers = async (q = '') => {
+    const params = q.trim() ? `?${new URLSearchParams({ q: q.trim() })}` : '';
+    const res = await _fetch(`${API_BASE_URL}/rbac/users${params}`, { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** The sites the caller manages and the roles they may grant: { sites: [{id, name, is_default}], roles }. */
+export const getGrants = async () => {
+    const res = await _fetch(`${API_BASE_URL}/rbac/grants`, { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** Give a person a role on a site. */
+export const assignRole = async (userId, roleId, tenantId) => {
+    const res = await _fetch(`${API_BASE_URL}/rbac/users/${userId}/roles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ..._authHeaders() },
+        body: JSON.stringify({ role_id: roleId, tenant_id: tenantId }),
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** Take a role away (by the assignment's id). */
+export const revokeRole = async (userId, assignmentId) => {
+    const res = await _fetch(`${API_BASE_URL}/rbac/users/${userId}/roles/${assignmentId}`, {
+        method: 'DELETE',
+        headers: { ..._authHeaders() },
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Bulk upload (Phase 4)
 // ─────────────────────────────────────────────────────────────────────────────

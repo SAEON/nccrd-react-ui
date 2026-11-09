@@ -1,6 +1,6 @@
 import { Link, useHref, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Home, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
+import { Home, Users, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
 import { NATIONAL_SITE } from '../utils/site';
@@ -109,9 +109,9 @@ const Navbar = () => {
                                 {pendingRequests > 0 && <span className="nav-count" aria-label={`${pendingRequests} waiting`}>{pendingRequests}</span>}
                             </Link>
                         )}
-                        {hasPermission('assign-role') && (
-                            <Link to="/admin/users/new" className="site-nav-link">
-                                <UserPlus size={15} aria-hidden="true" /> Add User
+                        {isAdmin && (
+                            <Link to="/admin/users" className="site-nav-link">
+                                <Users size={15} aria-hidden="true" /> People
                             </Link>
                         )}
                     </nav>
