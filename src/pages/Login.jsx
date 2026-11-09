@@ -61,6 +61,9 @@ const Login = () => {
                         autoComplete="current-password"
                         required
                     />
+                    <p style={{ fontSize: '0.85rem', marginTop: '0.4rem', textAlign: 'right' }}>
+                        <Link to="/forgot-password" state={{ email }}>Forgot your password?</Link>
+                    </p>
                 </div>
                 {error && (
                     <p role="alert" style={{ color: 'var(--color-danger, #c0392b)', fontSize: '0.85rem', marginBottom: '1rem' }}>

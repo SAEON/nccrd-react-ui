@@ -308,6 +308,31 @@ export const changePassword = async (currentPassword, newPassword) => {
     return res.json();
 };
 
+/**
+ * Ask for a password reset link by email. Backed by POST /auth/forgot-password,
+ * which replies the same whether or not the email has an account. Returns { detail }.
+ */
+export const requestPasswordReset = async (email) => {
+    const res = await _fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+    });
+    if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
+/** Set a new password with the token from the emailed link. Backed by POST /auth/reset-password. */
+export const resetPassword = async (token, newPassword) => {
+    const res = await _fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: newPassword }),
+    });
+    if (!res.ok) await _throwOnError(res);
+    return res.json();
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // RBAC
 // ─────────────────────────────────────────────────────────────────────────────
