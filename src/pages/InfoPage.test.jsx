@@ -60,3 +60,25 @@ describe('InfoPage', () => {
         expect(screen.getByText(/GNU Affero General Public License as published/)).toBeInTheDocument();
     });
 });
+
+describe('InfoPage for a site admin', () => {
+    it('splits About texts into paragraphs and links to editing them', async () => {
+        const { CurrentUserContext } = await import('../context/CurrentUserContext');
+        const site = siteFrom({ short_title: 'MCCRD', front_matter: { about: { title: 'Welcome', content: 'One.\n\nTwo.' } } });
+        render(
+            <MemoryRouter>
+                <CurrentUserContext.Provider value={{ hasPermission: (p) => p === 'edit-site' }}>
+                    <SiteContext.Provider value={site}><InfoPage page="about" /></SiteContext.Provider>
+                </CurrentUserContext.Provider>
+            </MemoryRouter>,
+        );
+        expect(screen.getByRole('link', { name: 'Edit this page' })).toHaveAttribute('href', '/admin/site');
+        expect(screen.getByText('One.').tagName).toBe('P');
+        expect(screen.getByText('Two.').tagName).toBe('P');
+    });
+
+    it('offers no edit link to visitors', () => {
+        renderPage('about');
+        expect(screen.queryByRole('link', { name: 'Edit this page' })).not.toBeInTheDocument();
+    });
+});

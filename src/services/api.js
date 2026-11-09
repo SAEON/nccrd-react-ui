@@ -93,6 +93,37 @@ export const getSite = async () => {
 };
 
 /**
+ * Change the current site (permission edit-site): any of { title, short_title,
+ * contact_email, colour, sections: { about: { title, content }, … }, hero_credit }.
+ * Returns the site.
+ */
+export const updateSite = async (body) => {
+    const res = await _fetch(`${API_BASE_URL}/site`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ..._authHeaders() },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** Upload the site's 'logo' (emblem), 'flag' or 'hero' (front-page photo). Returns the site. */
+export const uploadSiteImage = async (kind, file) => {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await _fetch(`${API_BASE_URL}/site/images/${kind}`, { method: 'POST', headers: { ..._authHeaders() }, body: form });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/** Remove the site's emblem or flag, or go back to the default front-page photo. Returns the site. */
+export const removeSiteImage = async (kind) => {
+    const res = await _fetch(`${API_BASE_URL}/site/images/${kind}`, { method: 'DELETE', headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/**
  * List all submissions, optionally filtered.
  *
  * Throws on network or API error so the caller (Home.jsx) can set

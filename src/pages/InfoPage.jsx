@@ -10,6 +10,8 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { INFO_PAGES } from '../content/infoPages';
 import { useSite } from '../context/SiteContext';
+import { useCurrentUser } from '../context/CurrentUserContext';
+import { Pencil } from 'lucide-react';
 
 const isInternal = (href) => href.startsWith('/');
 
@@ -148,12 +150,14 @@ const FrontMatter = ({ sections }) => FRONT_MATTER_SECTIONS
     .map((key) => (
         <section key={key}>
             <h2>{sections[key].title}</h2>
-            <p>{sections[key].content}</p>
+            {/* A blank line starts a new paragraph (as typed on the site settings page). */}
+            {sections[key].content.split(/\n\s*\n/).map((paragraph, i) => <p key={i}>{paragraph}</p>)}
         </section>
     ));
 
 const InfoPage = ({ page }) => {
     const site = useSite();
+    const { hasPermission } = useCurrentUser();
     const { hash } = useLocation();
 
     // Links such as /paia-popia#privacy open on that section.
@@ -167,6 +171,9 @@ const InfoPage = ({ page }) => {
     return (
         <article className="container info-page">
             <h1>{title}</h1>
+            {page === 'about' && hasPermission('edit-site') && (
+                <p><Link to="/admin/site" className="info-edit"><Pencil size={14} aria-hidden="true" /> Edit this page</Link></p>
+            )}
             {subtitle && <p className="info-subtitle">{subtitle}</p>}
             {content ?? INFO_PAGES[page].map((block, i) => <Block key={i} block={block} />)}
             {typeof extra === 'function' ? extra(site) : extra}

@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, UserPlus, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, Search, Settings, UserPlus, UserCheck, X } from 'lucide-react';
 import { assignRole, getGrants, getUsers, revokeRole } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
@@ -163,6 +163,9 @@ const AdminUsers = () => {
                 <div className="people-links">
                     <Link to="/admin/users/new" className="btn btn-outline"><UserPlus size={15} aria-hidden="true" /> Add a person</Link>
                     <Link to="/admin/registrations" className="btn btn-outline"><UserCheck size={15} aria-hidden="true" /> Account requests</Link>
+                    {hasPermission('edit-site') && (
+                        <Link to="/admin/site" className="btn btn-outline"><Settings size={15} aria-hidden="true" /> Site settings</Link>
+                    )}
                 </div>
             </div>
 

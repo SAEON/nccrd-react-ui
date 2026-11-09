@@ -6,3 +6,8 @@ import { NATIONAL_SITE } from '../utils/site';
 export const SiteContext = createContext(NATIONAL_SITE);
 
 export const useSite = () => useContext(SiteContext);
+
+/** Show a changed site straight away: pass it the site as PUT /site returns it. */
+export const SiteUpdateContext = createContext(() => {});
+
+export const useSiteUpdate = () => useContext(SiteUpdateContext);

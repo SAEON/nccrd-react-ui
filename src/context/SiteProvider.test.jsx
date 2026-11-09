@@ -5,7 +5,7 @@ import { SiteProvider } from './SiteProvider';
 import { getSite } from '../services/api';
 import { loadPage } from '../utils/site';
 
-vi.mock('../services/api', () => ({ getSite: vi.fn() }));
+vi.mock('../services/api', () => ({ getSite: vi.fn(), API_BASE_URL: 'http://localhost:2022' }));
 vi.mock('../utils/site', async (importOriginal) => ({ ...(await importOriginal()), loadPage: vi.fn() }));
 
 /** The page at `address` (what the browser shows), routed at `route` (what the router sees under its basename). */

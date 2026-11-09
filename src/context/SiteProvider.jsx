@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getSite } from '../services/api';
+import { API_BASE_URL, getSite } from '../services/api';
 import { NATIONAL_SITE, loadPage, provinceParam, provinceSegmentOf, siteFrom, themeVariables } from '../utils/site';
-import { SiteContext } from './SiteContext';
+import { SiteContext, SiteUpdateContext } from './SiteContext';
 
 /**
  * Loads the current site (GET /site) once and applies its branding: its
@@ -14,12 +14,13 @@ import { SiteContext } from './SiteContext';
 export const SiteProvider = ({ children }) => {
     const [site, setSite] = useState(NATIONAL_SITE);
     const location = useLocation();
+    const applySite = useCallback((data) => setSite(siteFrom(data, API_BASE_URL)), []);
 
     useEffect(() => {
         getSite()
-            .then((data) => setSite(siteFrom(data)))
+            .then(applySite)
             .catch((err) => console.warn('[NCCRD] Could not load the site; showing the national one.', err));
-    }, []);
+    }, [applySite]);
 
     useEffect(() => {
         const style = document.documentElement.style;
@@ -38,5 +39,9 @@ export const SiteProvider = ({ children }) => {
         loadPage(`/${segment}${path}${location.search}${location.hash}`);
     }, [site.province, location]);
 
-    return <SiteContext.Provider value={site}>{children}</SiteContext.Provider>;
+    return (
+        <SiteContext.Provider value={site}>
+            <SiteUpdateContext.Provider value={applySite}>{children}</SiteUpdateContext.Provider>
+        </SiteContext.Provider>
+    );
 };

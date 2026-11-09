@@ -17,6 +17,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const AdminCreateUser = lazy(() => import('./pages/AdminCreateUser'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+const AdminSite = lazy(() => import('./pages/AdminSite'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Review = lazy(() => import('./pages/Review'))
 const InfoPage = lazy(() => import('./pages/InfoPage'))
@@ -36,6 +37,7 @@ function App() {
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="reset-password" element={<ResetPassword />} />
           <Route path="admin/users" element={<RequireAuth><AdminUsers /></RequireAuth>} />
+          <Route path="admin/site" element={<RequireAuth><AdminSite /></RequireAuth>} />
           <Route path="admin/users/new" element={<RequireAuth><AdminCreateUser /></RequireAuth>} />
           <Route path="review" element={<RequireAuth><Review /></RequireAuth>} />
           <Route path="admin/registrations" element={<RequireAuth><AdminRegistrations /></RequireAuth>} />

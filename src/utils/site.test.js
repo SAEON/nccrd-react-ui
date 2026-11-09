@@ -73,3 +73,16 @@ describe('province paths', () => {
         expect(at('/?siteprovince=atlantis')).toBeNull();
     });
 });
+
+describe('uploaded site images', () => {
+    it('are served by the API; images shipped with the interface are not', async () => {
+        const { assetUrl, siteFrom } = await import('./site');
+        expect(assetUrl('/uploads/sites/7/logo-ab.png', 'http://localhost:2022')).toBe('http://localhost:2022/uploads/sites/7/logo-ab.png');
+        expect(assetUrl('/sites/mccrd/arms.png', 'http://localhost:2022')).toBe('/sites/mccrd/arms.png');
+        const site = siteFrom({ logo_url: '/uploads/sites/7/logo.png', hero_image: { url: '/uploads/sites/7/hero.jpg', credit: 'Me' } }, '/api');
+        expect(site.logo_url).toBe('/api/uploads/sites/7/logo.png');
+        expect(site.hero_image).toEqual({ url: '/api/uploads/sites/7/hero.jpg', credit: 'Me' });
+        expect(siteFrom({ hero_image: null }).hero_image).toEqual({ url: '/hero-bg.jpg' });
+    });
+});
+
