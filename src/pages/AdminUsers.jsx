@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, Settings, UserPlus, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Search, Settings, UserPlus, UserCheck, X } from 'lucide-react';
 import { assignRole, getGrants, getUsers, revokeRole } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
@@ -165,6 +165,9 @@ const AdminUsers = () => {
                     <Link to="/admin/registrations" className="btn btn-outline"><UserCheck size={15} aria-hidden="true" /> Account requests</Link>
                     {hasPermission('edit-site') && (
                         <Link to="/admin/site" className="btn btn-outline"><Settings size={15} aria-hidden="true" /> Site settings</Link>
+                    )}
+                    {hasPermission('view-stats') && (
+                        <Link to="/admin/stats" className="btn btn-outline"><BarChart3 size={15} aria-hidden="true" /> Visitors</Link>
                     )}
                 </div>
             </div>

@@ -93,6 +93,34 @@ export const getSite = async () => {
 };
 
 /**
+ * Count a view of a public page of this site (POST /stats/view). Only a count
+ * per site, day and page is kept: nothing identifies the visitor. Never
+ * throws, and skipped when the browser asks not to be tracked.
+ */
+let _lastView = { path: null, at: 0 };
+
+export const countView = (path) => {
+    if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl) return;
+    // The same page again within a second is one view (e.g. React's development double render).
+    const now = Date.now();
+    if (_lastView.path === path && now - _lastView.at < 1000) return;
+    _lastView = { path, at: now };
+    _fetch(`${API_BASE_URL}/stats/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path }),
+        keepalive: true,
+    }).catch(() => {});
+};
+
+/** This site's visitor numbers over the last `days` days (permission view-stats). */
+export const getStats = async (days = 30) => {
+    const res = await _fetch(`${API_BASE_URL}/stats?days=${days}`, { headers: { ..._authHeaders() } });
+    if (!res.ok) await _throwOnErrorWithAuthCheck(res);
+    return res.json();
+};
+
+/**
  * Change the current site (permission edit-site): any of { title, short_title,
  * contact_email, colour, sections: { about: { title, content }, … }, hero_credit }.
  * Returns the site.
