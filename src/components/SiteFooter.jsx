@@ -2,12 +2,13 @@
 // SiteFooter — quick links, legal pages, contacts and source code, matching
 // the legacy site's footer.
 // ─────────────────────────────────────────────────────────────────────────────
-import { Link } from 'react-router-dom';
+import { Link, useHref } from 'react-router-dom';
 import { useSite } from '../context/SiteContext';
-import { SITE_PROVINCE_PARAM, provinceParam } from '../utils/site';
 
 const SiteFooter = () => {
     const site = useSite();
+    // A page load, so the browser scrolls to the list: the site's own home page.
+    const searchHref = useHref('/#project-directory');
     return (
         <footer className="site-footer">
             <div className="container site-footer-grid">
@@ -18,7 +19,7 @@ const SiteFooter = () => {
                         <li><Link to="/about">About</Link></li>
                         <li><Link to="/reports">Data reports</Link></li>
                         <li><Link to="/submission/new">Contribute</Link></li>
-                        <li><a href={`/${site.province ? `?${SITE_PROVINCE_PARAM}=${provinceParam(site.province)}` : ''}#project-directory`}>Search data</a></li>
+                        <li><a href={searchHref}>Search data</a></li>
                         <li><Link to="/login">Log in</Link></li>
                     </ul>
                 </nav>

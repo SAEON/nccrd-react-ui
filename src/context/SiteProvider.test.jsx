@@ -1,53 +1,48 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { Link, MemoryRouter, useLocation } from 'react-router-dom';
+import { render, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { SiteProvider } from './SiteProvider';
 import { getSite } from '../services/api';
+import { loadPage } from '../utils/site';
 
 vi.mock('../services/api', () => ({ getSite: vi.fn() }));
+vi.mock('../utils/site', async (importOriginal) => ({ ...(await importOriginal()), loadPage: vi.fn() }));
 
-const Where = () => {
-    const { pathname, search, hash, state } = useLocation();
-    return (
-        <>
-            <output>{`${pathname}${search}${hash}`}</output>
-            <span data-testid="state">{state?.from}</span>
-            <Link to="/reports">Reports</Link>
-        </>
-    );
+/** The page at `address` (what the browser shows), routed at `route` (what the router sees under its basename). */
+const renderAt = (address, route) => {
+    window.history.replaceState(null, '', address);
+    return render(<MemoryRouter initialEntries={[route]}><SiteProvider>page</SiteProvider></MemoryRouter>);
 };
 
-const renderAt = (entry) => render(
-    <MemoryRouter initialEntries={[entry]}>
-        <SiteProvider><Where /></SiteProvider>
-    </MemoryRouter>
-);
+describe('SiteProvider and the address', () => {
+    beforeEach(() => {
+        getSite.mockReset();
+        loadPage.mockReset();
+    });
 
-describe('SiteProvider and the URL', () => {
-    beforeEach(() => getSite.mockReset());
-
-    it('adds the province of a province site to the URL, keeping the rest', async () => {
+    it('moves a province site found by its hostname to its province path, keeping the page', async () => {
         getSite.mockResolvedValue({ short_title: 'MCCRD', province: 'Mpumalanga' });
-        renderAt({ pathname: '/paia-popia', search: '?a=1', hash: '#privacy', state: { from: '/x' } });
-        await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(
-            '/paia-popia?a=1&siteprovince=mpumalanga#privacy',
-        ));
-        expect(screen.getByTestId('state')).toHaveTextContent('/x');
+        renderAt('/reports?a=1#top', { pathname: '/reports', search: '?a=1', hash: '#top' });
+        await waitFor(() => expect(loadPage).toHaveBeenCalledWith('/mpumalanga/reports?a=1#top'));
     });
 
-    it('keeps it when moving to another page', async () => {
+    it('moves its home page to the bare province path', async () => {
         getSite.mockResolvedValue({ short_title: 'WCCRD', province: 'Western Cape' });
-        renderAt('/');
-        await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('/?siteprovince=western-cape'));
-        await userEvent.click(screen.getByRole('link', { name: 'Reports' }));
-        await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('/reports?siteprovince=western-cape'));
+        renderAt('/', '/');
+        await waitFor(() => expect(loadPage).toHaveBeenCalledWith('/western-cape'));
     });
 
-    it('leaves the national site\'s URL alone', async () => {
+    it('stays on a province path', async () => {
+        getSite.mockResolvedValue({ short_title: 'MCCRD', province: 'Mpumalanga' });
+        renderAt('/mpumalanga/reports', '/reports');
+        await waitFor(() => expect(document.title).toBe('MCCRD'));
+        expect(loadPage).not.toHaveBeenCalled();
+    });
+
+    it('leaves the national site where it is', async () => {
         getSite.mockResolvedValue({ short_title: 'NCCRD', province: null });
-        renderAt('/reports');
+        renderAt('/reports', '/reports');
         await waitFor(() => expect(document.title).toBe('NCCRD'));
-        expect(screen.getByRole('status')).toHaveTextContent(/^\/reports$/);
+        expect(loadPage).not.toHaveBeenCalled();
     });
 });

@@ -8,7 +8,7 @@
  */
 
 import { getToken, clearToken } from './authStorage';
-import { SITE_PROVINCE_PARAM } from '../utils/site';
+import { SITE_PROVINCE_PARAM, provinceSegmentOf } from '../utils/site';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:2022';
 
@@ -16,20 +16,23 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:20
  * The site this page belongs to: its hostname, e.g. mccrd.environment.gov.za
  * or mccrd.localhost for the Mpumalanga site. The API may be on another host
  * (locally localhost:2022), so every request names the site whose projects,
- * reports and branding it wants. ?siteprovince=mpumalanga in the page's URL
- * names a province site on any host, and takes precedence.
+ * reports and branding it wants. A province site's path, e.g. /mpumalanga/…,
+ * names it on any host, and takes precedence.
  */
 const SITE = window.location.hostname;
-const SITE_PROVINCE = new URLSearchParams(window.location.search).get(SITE_PROVINCE_PARAM);
+const _siteProvince = () => provinceSegmentOf(window.location.pathname);
 
-const _fetch = (url, init = {}) => fetch(url, {
-    ...init,
-    headers: {
-        'X-NCCRD-Site': SITE,
-        ...(SITE_PROVINCE && { 'X-NCCRD-Site-Province': SITE_PROVINCE }),
-        ...init.headers,
-    },
-});
+const _fetch = (url, init = {}) => {
+    const province = _siteProvince();
+    return fetch(url, {
+        ...init,
+        headers: {
+            'X-NCCRD-Site': SITE,
+            ...(province && { 'X-NCCRD-Site-Province': province }),
+            ...init.headers,
+        },
+    });
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -478,7 +481,7 @@ export const UPLOAD_TEMPLATE_URL = `${API_BASE_URL}/submission/upload_template`;
  */
 export const reportExportUrl = (params = {}, format = 'xlsx') =>
     `${API_BASE_URL}/report/export${_reportQuery({
-        ...params, format, site: SITE, ...(SITE_PROVINCE && { [SITE_PROVINCE_PARAM]: SITE_PROVINCE }),
+        ...params, format, site: SITE, ...(_siteProvince() && { [SITE_PROVINCE_PARAM]: _siteProvince() }),
     })}`;
 
 /**

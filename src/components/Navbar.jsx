@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useHref, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Home, UserPlus, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
@@ -15,6 +15,7 @@ const fallBackTo = (src, alt) => (e) => {
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const mySubmissionsHref = useHref('/?mine=1');
     const site = useSite();
     const { user, hasPermission, isAuthenticated, logout } = useCurrentUser();
     const isReviewer = hasPermission('validate-submission');
@@ -87,7 +88,7 @@ const Navbar = () => {
                             <BarChart3 size={15} aria-hidden="true" /> Data Reports
                         </Link>
                         {isAuthenticated && (
-                            <a href="/?mine=1" className="site-nav-link" onClick={handleMySubmissions}>
+                            <a href={mySubmissionsHref} className="site-nav-link" onClick={handleMySubmissions}>
                                 <FolderOpen size={15} aria-hidden="true" /> My Submissions
                             </a>
                         )}

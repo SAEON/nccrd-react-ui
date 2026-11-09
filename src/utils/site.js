@@ -15,7 +15,10 @@ export const NATIONAL_SITE = {
     is_default: true,
 };
 
-/** The URL parameter naming a province site, e.g. ?siteprovince=mpumalanga. */
+/**
+ * The earlier form of a province site's address, ?siteprovince=mpumalanga,
+ * still accepted (see siteAddress), and how report downloads name the site.
+ */
 export const SITE_PROVINCE_PARAM = 'siteprovince';
 
 /** "Mpumalanga" → "mpumalanga", "Western Cape" → "western-cape": its value in a URL. */
@@ -53,4 +56,43 @@ export const PROVINCE_BOUNDS = {
     'Northern Cape': [[-32.9, 16.4], [-24.7, 25.6]],
     'North West': [[-28.0, 22.6], [-24.6, 28.3]],
     'Western Cape': [[-34.8, 17.8], [-31.0, 24.2]],
+};
+
+/** Opens another address as a new page load (another site's basename). */
+export const loadPage = (address) => window.location.replace(address);
+
+/** Each province site's first path segment: /mpumalanga, /western-cape, … */
+export const PROVINCE_SEGMENTS = Object.keys(PROVINCE_BOUNDS).map(provinceParam);
+
+/** The province site an address belongs to: "/mpumalanga/reports" → "mpumalanga"; null for the national site. */
+export const provinceSegmentOf = (pathname) => {
+    const segment = (pathname.split('/')[1] || '').toLowerCase();
+    return PROVINCE_SEGMENTS.includes(segment) ? segment : null;
+};
+
+/** The site's part of an address, the router's basename: "/mpumalanga", or "" for the national site. */
+export const siteBasename = (pathname) => {
+    const segment = provinceSegmentOf(pathname);
+    return segment ? `/${segment}` : '';
+};
+
+/**
+ * A province site's address as /<province>/…: from ?siteprovince=<province>
+ * on the national address, or with the province in capitals. null if the
+ * address is fine as it is.
+ */
+export const siteAddress = ({ pathname, search, hash }) => {
+    const params = new URLSearchParams(search);
+    const fromParam = params.get(SITE_PROVINCE_PARAM);
+    const named = fromParam && provinceSegmentOf(`/${provinceParam(fromParam)}`);
+    const current = pathname.split('/')[1] || '';
+    let path = pathname;
+    if (provinceSegmentOf(pathname)) {
+        path = `/${current.toLowerCase()}${pathname.slice(current.length + 1)}`;
+    } else if (named) {
+        path = `/${named}${pathname === '/' ? '' : pathname}`;
+    }
+    if (named) params.delete(SITE_PROVINCE_PARAM);
+    const address = `${path}${params.size ? `?${params}` : ''}${hash}`;
+    return address === `${pathname}${search}${hash}` ? null : address;
 };

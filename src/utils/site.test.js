@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NATIONAL_SITE, provinceParam, regionPossessive, siteFrom, themeVariables } from './site';
+import { NATIONAL_SITE, provinceParam, provinceSegmentOf, regionPossessive, siteAddress, siteBasename, siteFrom, themeVariables } from './site';
 
 describe('provinceParam', () => {
     it('writes a province as it appears in a URL', () => {
@@ -40,5 +40,36 @@ describe('regionPossessive', () => {
     it('names the province of a province site, else South Africa', () => {
         expect(regionPossessive(NATIONAL_SITE)).toBe('South Africa’s');
         expect(regionPossessive(siteFrom({ province: 'Mpumalanga' }))).toBe('Mpumalanga’s');
+    });
+});
+
+describe('province paths', () => {
+    it('finds the province site an address belongs to', () => {
+        expect(provinceSegmentOf('/mpumalanga/reports')).toBe('mpumalanga');
+        expect(provinceSegmentOf('/Western-Cape')).toBe('western-cape');
+        expect(provinceSegmentOf('/reports')).toBeNull();
+        expect(provinceSegmentOf('/')).toBeNull();
+        expect(siteBasename('/kwazulu-natal/submission/new')).toBe('/kwazulu-natal');
+        expect(siteBasename('/about')).toBe('');
+    });
+
+    const at = (path) => {
+        const url = new URL(path, 'http://x');
+        return siteAddress({ pathname: url.pathname, search: url.search, hash: url.hash });
+    };
+
+    it('moves the earlier ?siteprovince= address to the province path', () => {
+        expect(at('/?siteprovince=mpumalanga')).toBe('/mpumalanga');
+        expect(at('/reports?siteprovince=Western%20Cape&a=1#x')).toBe('/western-cape/reports?a=1#x');
+    });
+
+    it('writes the province in lower case', () => {
+        expect(at('/Mpumalanga/reports?a=1')).toBe('/mpumalanga/reports?a=1');
+    });
+
+    it('leaves addresses that are fine alone', () => {
+        expect(at('/mpumalanga/reports')).toBeNull();
+        expect(at('/reports?a=1')).toBeNull();
+        expect(at('/?siteprovince=atlantis')).toBeNull();
     });
 });
