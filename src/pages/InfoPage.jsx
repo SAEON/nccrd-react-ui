@@ -2,11 +2,16 @@
  * InfoPage.jsx — About, Terms of Use, PAIA & POPIA and Licence.
  *
  * About / Terms / PAIA render DFFE's published text from content/infoPages.js
- * verbatim. The licence page describes this rebuild's own licensing, which
+ * verbatim; a province site with its own About texts (GET /site) shows those
+ * instead. The licence page describes this rebuild's own licensing, which
  * differs from the legacy site's (MIT, DFFE).
  */
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { INFO_PAGES } from '../content/infoPages';
+import { useSite } from '../context/SiteContext';
+import { useCurrentUser } from '../context/CurrentUserContext';
+import { Pencil } from 'lucide-react';
 
 const isInternal = (href) => href.startsWith('/');
 
@@ -62,14 +67,68 @@ const LicenceContent = () => (
     </>
 );
 
+/**
+ * The privacy notice (POPIA section 18): who holds which personal information
+ * and why, who sees it, and people's rights. The consent boxes on sign-up,
+ * the project form and bulk upload link here (/paia-popia#privacy).
+ */
+const PrivacyNotice = ({ site }) => (
+    <section id="privacy">
+        <h2>Privacy notice: the personal information we hold</h2>
+        <p>
+            The Department of Forestry, Fisheries and the Environment (DFFE) is responsible for the personal information
+            in the {site.title}. The South African Environmental Observation Network (SAEON) runs the website on
+            DFFE&apos;s behalf.
+        </p>
+        <h3>What we collect, and why</h3>
+        <ul>
+            <li>
+                <strong>Your account:</strong> your name, email address and organisation, a password (stored only in a
+                form that cannot be read back), and what you tell us when you request an account. We use them to run
+                your account, review your request, and credit the projects you submit.
+            </li>
+            <li>
+                <strong>Project contacts:</strong> the name, organisation, email address and phone number of each
+                project&apos;s manager. We use them to verify the project and follow up on its progress. Whoever submits
+                a project confirms that its manager has agreed to this.
+            </li>
+        </ul>
+        <h3>Who sees it</h3>
+        <p>
+            A project manager&apos;s name and organisation are published with the project. Their email address and
+            phone number are seen only by the person who submitted the project and DFFE&apos;s reviewers, and are left
+            out of downloads. Account details are seen only by the website&apos;s administrators. We do not sell
+            personal information or share it outside government, except where the law requires it.
+        </p>
+        <h3>Is it required?</h3>
+        <p>
+            Using the database is voluntary. Without these details we cannot open an account for you, or accept a
+            project for review.
+        </p>
+        <h3>How long we keep it</h3>
+        <p>
+            Account details are kept while your account is in use. Project contacts are kept with the project, as
+            part of the record of South Africa&apos;s climate change responses.
+        </p>
+        <h3>Your rights</h3>
+        <p>
+            You may ask to see the personal information we hold about you, and ask us to correct or delete it, or
+            object to how we use it: write to{' '}
+            <a href={`mailto:${site.contact_email}`}>{site.contact_email}</a>. You may also complain to the{' '}
+            <a href="https://inforegulator.org.za/" target="_blank" rel="noopener noreferrer">Information Regulator</a>.
+        </p>
+    </section>
+);
+
 const PAGES = {
     about: { title: 'About the NCCRD' },
     'terms-of-use': { title: 'Terms of Use' },
     'paia-popia': {
         title: 'PAIA & POPIA',
         subtitle: 'Promotion of Access to Information Act (PAIA) and Protection of Personal Information Act (POPIA)',
-        extra: (
+        extra: (site) => (
             <>
+                <PrivacyNotice site={site} />
                 <h2>How this website stores information</h2>
                 <p>
                     This website does not use cookies or visitor tracking. When you log in, your session is kept in your
@@ -82,14 +141,42 @@ const PAGES = {
     license: { title: 'Licence', content: <LicenceContent /> },
 };
 
+/** A site's own About texts: the legacy sites' three, with the province's own
+ *  section on climate change there (context) after the welcome. */
+const FRONT_MATTER_SECTIONS = ['about', 'context', 'explore', 'submit'];
+
+const FrontMatter = ({ sections }) => FRONT_MATTER_SECTIONS
+    .filter((key) => sections[key]?.content)
+    .map((key) => (
+        <section key={key}>
+            <h2>{sections[key].title}</h2>
+            {/* A blank line starts a new paragraph (as typed on the site settings page). */}
+            {sections[key].content.split(/\n\s*\n/).map((paragraph, i) => <p key={i}>{paragraph}</p>)}
+        </section>
+    ));
+
 const InfoPage = ({ page }) => {
-    const { title, subtitle, content, extra } = PAGES[page];
+    const site = useSite();
+    const { hasPermission } = useCurrentUser();
+    const { hash } = useLocation();
+
+    // Links such as /paia-popia#privacy open on that section.
+    useEffect(() => {
+        if (hash) document.getElementById(hash.slice(1))?.scrollIntoView();
+    }, [hash]);
+
+    const { title, subtitle, content, extra } = page === 'about' && site.front_matter
+        ? { title: `About the ${site.short_title}`, content: <FrontMatter sections={site.front_matter} /> }
+        : PAGES[page];
     return (
         <article className="container info-page">
             <h1>{title}</h1>
+            {page === 'about' && hasPermission('edit-site') && (
+                <p><Link to="/admin/site" className="info-edit"><Pencil size={14} aria-hidden="true" /> Edit this page</Link></p>
+            )}
             {subtitle && <p className="info-subtitle">{subtitle}</p>}
             {content ?? INFO_PAGES[page].map((block, i) => <Block key={i} block={block} />)}
-            {extra}
+            {typeof extra === 'function' ? extra(site) : extra}
         </article>
     );
 };

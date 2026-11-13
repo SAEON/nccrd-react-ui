@@ -73,20 +73,34 @@ export const RegionSelect = ({ id, value, onChange, options, placeholder, disabl
  * A stored value that doesn't match any current term (legacy free text)
  * simply renders unselected rather than crashing.
  */
-export const VocabularySelect = ({ id, value, onChange, options, placeholder = '-- Select --', required }) => (
-    <select
-        id={id}
-        className="input-field"
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-    >
-        <option value="">{placeholder}</option>
-        {options.map((opt) => (
-            <option key={opt.id} value={opt.term}>{opt.term}</option>
-        ))}
-    </select>
-);
+/**
+ * A dropdown of vocabulary terms (utils/vocabulary.js picks which). Sub-terms
+ * are indented under their parent. A stored value that isn't in the list,
+ * e.g. free text from the legacy system, stays selected and marked as such,
+ * so saving never drops it.
+ */
+export const VocabularySelect = ({ id, value, onChange, options, placeholder = '-- Select --', required, disabled }) => {
+    const top = Math.min(...options.map((opt) => opt.level ?? 1));
+    const unlisted = value && options.length > 0 && !options.some((opt) => opt.term === value);
+    return (
+        <select
+            id={id}
+            className="input-field"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            required={required}
+            disabled={disabled && !value}
+        >
+            <option value="">{placeholder}</option>
+            {unlisted && <option value={value}>{value} (not in the list)</option>}
+            {options.map((opt) => (
+                <option key={opt.id} value={opt.term}>
+                    {'\u00a0\u00a0\u00a0'.repeat((opt.level ?? 1) - top)}{opt.term}
+                </option>
+            ))}
+        </select>
+    );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section divider

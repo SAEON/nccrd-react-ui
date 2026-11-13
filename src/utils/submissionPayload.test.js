@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizePayload, normalizeGeoLocation, DEFAULT_COORDINATES } from './submissionPayload';
+import { sanitizePayload, normalizeGeoLocation } from './submissionPayload';
 
 describe('sanitizePayload', () => {
     it('converts empty-string enum fields to null', () => {
@@ -57,9 +57,10 @@ describe('sanitizePayload', () => {
         expect(result.geo_location).not.toHaveProperty('district');
     });
 
-    it('falls back to default coordinates when geo_location has none', () => {
-        const result = sanitizePayload({ geo_location: { province: 'GT' } });
-        expect(result.geo_location.coordinates).toEqual([30.374, -27.936]);
+    it('sends no coordinates unless both were given, never a made-up point', () => {
+        expect(sanitizePayload({ geo_location: { province: 'GT' } }).geo_location).not.toHaveProperty('coordinates');
+        expect(sanitizePayload({ geo_location: { coordinates: [28.05, null] } }).geo_location).not.toHaveProperty('coordinates');
+        expect(sanitizePayload({ geo_location: { coordinates: [28.05, -26.1] } }).geo_location.coordinates).toEqual([28.05, -26.1]);
     });
 
     it('strips adaptation_data when intervention_measurement is Mitigation', () => {
@@ -131,7 +132,7 @@ describe('normalizeGeoLocation', () => {
             district: '',
             local_municipality: '',
             town_suburb: '',
-            coordinates: DEFAULT_COORDINATES,
+            coordinates: [null, null],
         });
     });
 
@@ -154,15 +155,15 @@ describe('normalizeGeoLocation', () => {
         expect(result.province).toBe('');
     });
 
-    it('drops a legacy WKT coordinate string in favour of the default point', () => {
-        const result = normalizeGeoLocation({
-            coordinates: 'GEOMETRYCOLLECTION (POINT (24.27 -26.63))',
-        });
-        expect(result.coordinates).toEqual(DEFAULT_COORDINATES);
+    it('keeps a legacy WKT location as its first point, so editing does not move the project', () => {
+        expect(normalizeGeoLocation({ coordinates: 'GEOMETRYCOLLECTION (POINT (24.27 -26.63))' }).coordinates)
+            .toEqual([24.27, -26.63]);
+        expect(normalizeGeoLocation({ coordinates: 'GEOMETRYCOLLECTION (POINT (30.97 -25.47), POINT (31.1 -25.5))' }).coordinates)
+            .toEqual([30.97, -25.47]);
     });
 
-    it('drops a coordinate array of the wrong length', () => {
+    it('leaves the location empty for a coordinate array of the wrong length', () => {
         const result = normalizeGeoLocation({ coordinates: [1, 2, 3] });
-        expect(result.coordinates).toEqual(DEFAULT_COORDINATES);
+        expect(result.coordinates).toEqual([null, null]);
     });
 });

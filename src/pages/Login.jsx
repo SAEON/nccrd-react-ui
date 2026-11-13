@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCurrentUser } from '../context/CurrentUserContext';
+import { useSite } from '../context/SiteContext';
 
 const Login = () => {
     const { login } = useCurrentUser();
     const navigate = useNavigate();
+    const site = useSite();
     const location = useLocation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -32,8 +34,9 @@ const Login = () => {
     };
 
     return (
-        <div className="container" style={{ maxWidth: '420px', padding: '4rem 1rem' }}>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Log in</h1>
+        <div className="container form-card" style={{ maxWidth: '26.25rem' }}>
+            <h1>Log in</h1>
+            <p className="form-lede">Log in to submit projects and follow your submissions on the {site.short_title}.</p>
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
                     <label className="input-label" htmlFor="login-email">Email</label>
@@ -58,17 +61,20 @@ const Login = () => {
                         autoComplete="current-password"
                         required
                     />
+                    <p style={{ fontSize: '0.85rem', marginTop: '0.4rem', textAlign: 'right' }}>
+                        <Link to="/forgot-password" state={{ email }}>Forgot your password?</Link>
+                    </p>
                 </div>
                 {error && (
                     <p role="alert" style={{ color: 'var(--color-danger, #c0392b)', fontSize: '0.85rem', marginBottom: '1rem' }}>
                         {error}
                     </p>
                 )}
-                <button type="submit" className="btn btn-outline" disabled={submitting} style={{ width: '100%' }}>
+                <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%' }}>
                     {submitting ? 'Logging in…' : 'Log in'}
                 </button>
             </form>
-            <p style={{ marginTop: '1.5rem', fontSize: '0.85rem' }}>
+            <p className="form-foot">
                 No account yet? <Link to="/register">Request one</Link> · <Link to="/">Back to home</Link>
             </p>
         </div>

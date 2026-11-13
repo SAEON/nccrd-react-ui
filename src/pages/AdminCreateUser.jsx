@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { createUser, getRoles, getTenants } from '../services/api';
+import { createUser, getGrants } from '../services/api';
+import { roleLabel } from '../utils/roles';
 import { useCurrentUser } from '../context/CurrentUserContext';
 
 /**
@@ -27,19 +28,21 @@ const AdminCreateUser = () => {
 
     useEffect(() => {
         if (!canAssignRole) return;
-        Promise.all([getRoles(), getTenants()])
-            .then(([r, t]) => { setRoles(r); setTenants(t); })
-            .catch(() => {
-                // Listing roles/tenants needs view-roles/view-tenants separately from
-                // assign-role — if this admin lacks those, just skip the role picker.
-            });
+        // The sites this admin manages and the roles they may give.
+        getGrants()
+            .then(({ sites, roles: grantable }) => {
+                setRoles(grantable);
+                setTenants(sites);
+                if (sites.length === 1) setTenantId(String(sites[0].id));
+            })
+            .catch(() => {});
     }, [canAssignRole]);
 
     if (loading) return null;
 
     if (!canAssignRole) {
         return (
-            <div className="container" style={{ maxWidth: '480px', padding: '4rem 1rem' }}>
+            <div className="container form-card" style={{ maxWidth: '30rem' }}>
                 <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>Add user</h1>
                 <p style={{ color: 'var(--text-muted)' }}>
                     You don&apos;t have permission to create users. Contact an administrator.
@@ -62,7 +65,7 @@ const AdminCreateUser = () => {
             setName('');
             setEmail('');
             setRoleId('');
-            setTenantId('');
+            setTenantId(tenants.length === 1 ? String(tenants[0].id) : '');
         } catch (err) {
             setError(err.message || 'Could not create user.');
         } finally {
@@ -71,11 +74,15 @@ const AdminCreateUser = () => {
     };
 
     return (
-        <div className="container" style={{ maxWidth: '480px', padding: '4rem 1rem' }}>
+        <div className="container form-card" style={{ maxWidth: '30rem' }}>
             <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Add user</h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                 Creates an account with a one-time temporary password. Share it with the
                 new user directly — it can&apos;t be retrieved again after this page.
+            </p>
+            <p className="form-help">
+                Only add someone who expects an account, and tell them DFFE holds their name and email to run it
+                (see the <Link to="/paia-popia#privacy">privacy notice</Link>).
             </p>
 
             {created && (
@@ -141,17 +148,17 @@ const AdminCreateUser = () => {
                             <select id="admin-create-role" className="input-field" value={roleId} onChange={(e) => setRoleId(e.target.value)}>
                                 <option value="">No role — grant later</option>
                                 {roles.map((r) => (
-                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                    <option key={r.id} value={r.id}>{roleLabel(r.name)}</option>
                                 ))}
                             </select>
                         </div>
                         {roleId && (
                             <div className="mb-6">
-                                <label className="input-label" htmlFor="admin-create-tenant">Tenant</label>
+                                <label className="input-label" htmlFor="admin-create-tenant">Site</label>
                                 <select id="admin-create-tenant" className="input-field" value={tenantId} onChange={(e) => setTenantId(e.target.value)} required>
-                                    <option value="" disabled>Select a tenant…</option>
+                                    <option value="" disabled>Select a site…</option>
                                     {tenants.map((t) => (
-                                        <option key={t.id} value={t.id}>{t.title || t.hostname}</option>
+                                        <option key={t.id} value={t.id}>{t.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -164,12 +171,12 @@ const AdminCreateUser = () => {
                         {error}
                     </p>
                 )}
-                <button type="submit" className="btn btn-outline" disabled={submitting} style={{ width: '100%' }}>
+                <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%' }}>
                     {submitting ? 'Creating…' : 'Create user'}
                 </button>
             </form>
             <p style={{ marginTop: '1.5rem', fontSize: '0.85rem' }}>
-                <Link to="/">Back to home</Link>
+                <Link to="/admin/users">Back to people</Link>
             </p>
         </div>
     );

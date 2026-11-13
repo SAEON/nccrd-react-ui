@@ -3,6 +3,8 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { getSubmissions } from '../services/api';
 import Home from './Home';
+import { SiteContext } from '../context/SiteContext';
+import { siteFrom } from '../utils/site';
 
 vi.mock('../services/api', () => ({
     getSubmissions: vi.fn(),
@@ -67,6 +69,17 @@ describe('Home filtering', () => {
         getSubmissions.mockResolvedValue([]);
         render(<MemoryRouter><Home /></MemoryRouter>);
         expect(await screen.findByRole('option', { name: 'South Africa (National)' })).toHaveValue('National');
+    });
+
+    it('has no province filter on a province site', async () => {
+        getSubmissions.mockResolvedValue([]);
+        render(
+            <MemoryRouter>
+                <SiteContext.Provider value={siteFrom({ province: 'Mpumalanga' })}><Home /></SiteContext.Provider>
+            </MemoryRouter>
+        );
+        expect(await screen.findByLabelText('Implementation Status')).toBeInTheDocument();
+        expect(screen.queryByLabelText('Province')).not.toBeInTheDocument();
     });
 
     it('offers "Only my submissions" to logged-in users and sends it as mine', async () => {

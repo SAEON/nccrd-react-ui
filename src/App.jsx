@@ -13,7 +13,12 @@ const SubmissionDetails = lazy(() => import('./pages/SubmissionDetails'))
 const SubmissionForm = lazy(() => import('./pages/SubmissionForm'))
 const Login = lazy(() => import('./pages/Login'))
 const ChangePassword = lazy(() => import('./pages/ChangePassword'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const AdminCreateUser = lazy(() => import('./pages/AdminCreateUser'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+const AdminSite = lazy(() => import('./pages/AdminSite'))
+const AdminStats = lazy(() => import('./pages/AdminStats'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Review = lazy(() => import('./pages/Review'))
 const InfoPage = lazy(() => import('./pages/InfoPage'))
@@ -30,6 +35,11 @@ function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="change-password" element={<ChangePassword />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="admin/users" element={<RequireAuth><AdminUsers /></RequireAuth>} />
+          <Route path="admin/site" element={<RequireAuth><AdminSite /></RequireAuth>} />
+          <Route path="admin/stats" element={<RequireAuth><AdminStats /></RequireAuth>} />
           <Route path="admin/users/new" element={<RequireAuth><AdminCreateUser /></RequireAuth>} />
           <Route path="review" element={<RequireAuth><Review /></RequireAuth>} />
           <Route path="admin/registrations" element={<RequireAuth><AdminRegistrations /></RequireAuth>} />

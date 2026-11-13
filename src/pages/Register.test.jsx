@@ -23,11 +23,17 @@ describe('Register', () => {
         expect(registerAccount).not.toHaveBeenCalled();
     });
 
-    it('sends the request without the confirmation and shows the reply', async () => {
+    it('sends the request with the privacy consent, without the confirmation, and shows the reply', async () => {
         render(<MemoryRouter><Register /></MemoryRouter>);
         fill();
+        const consent = screen.getByRole('checkbox', { name: /I agree/ });
+        expect(consent).toBeRequired();
+        fireEvent.click(consent);
         fireEvent.submit(screen.getByRole('button', { name: 'Request account' }).closest('form'));
         expect(await screen.findByRole('status')).toHaveTextContent('An administrator will review');
-        expect(registerAccount).toHaveBeenCalledWith({ name: 'Thandi M', email: 't@example.org', organisation: 'City of Joburg', password: 'a-long-password', note: '' });
+        expect(registerAccount).toHaveBeenCalledWith({
+            name: 'Thandi M', email: 't@example.org', organisation: 'City of Joburg', password: 'a-long-password', note: '',
+            accept_privacy_notice: true,
+        });
     });
 });

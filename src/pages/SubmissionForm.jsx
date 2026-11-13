@@ -8,14 +8,21 @@ import {
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { ArrowLeft, Save, Activity, AlertTriangle, FileDown, Paperclip, X, History } from 'lucide-react';
 import { sanitizePayload, normalizeGeoLocation } from '../utils/submissionPayload';
+import { typeTextColor } from '../utils/typeColors';
+import { childrenOf, inGroup, topLevel } from '../utils/vocabulary';
 import { draftKey, loadDraft, saveDraft, clearDraft } from '../utils/draftStorage';
 import ReauthModal from '../components/ReauthModal';
+import ConsentCheck from '../components/ConsentCheck';
 import { canEditSubmission, isCurator, reviewState } from '../utils/reviewStatus';
 import { Field, TextInput, NestedField, RegionSelect, VocabularySelect, SectionHeading } from '../components/form/FormFields';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
+/** The project manager's contact details: personal information (POPIA). */
+const CONTACT_FIELDS = ['project_manager_name', 'project_manager_email', 'project_manager_contact_number'];
+const contactOf = (data) => Object.fromEntries(CONTACT_FIELDS.map((f) => [f, String(data?.[f] ?? '').trim()]));
+
 const SubmissionForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -30,6 +37,7 @@ const SubmissionForm = () => {
     // `updatedate` of the version being edited, sent back on save so the API
     // can refuse to overwrite a newer edit by someone else (HTTP 409).
     const [baseUpdatedate, setBaseUpdatedate] = useState(null);
+    const [savedContact, setSavedContact] = useState(null);  // the stored contact, when editing
     const [draftOffer, setDraftOffer] = useState(null);     // unsaved draft found on open
     const [autosaveReady, setAutosaveReady] = useState(false);
     const [draftChecked, setDraftChecked] = useState(false);
@@ -76,6 +84,7 @@ const SubmissionForm = () => {
         project_manager_organization: '',
         project_manager_email: '',
         project_manager_contact_number: '',
+        contact_consent: false,
         research: '',
         platform: '',
         mitigation_data: null,
@@ -154,7 +163,8 @@ const SubmissionForm = () => {
     const VOCAB_TREES = [
         'budgetRanges', 'mitigationSectors', 'mitigationType', 'mitigationProgramme',
         'mitigationPolicies', 'coBenefits', 'cdmMethodology', 'executiveStatus',
-        'carbonCreditStandards', 'adaptationSectors', 'adaptationPolicies', 'hazards',
+        'carbonCreditStandards', 'carbonCreditVoluntaryOrganizations', 'adaptationSectors', 'adaptationPolicies',
+        'hazards',
     ];
     const [vocab, setVocab] = useState({});
 
@@ -193,6 +203,7 @@ const SubmissionForm = () => {
                 if (data.end_date) data.end_date = new Date(data.end_date).toISOString().split('T')[0];
 
                 setBaseUpdatedate(data.updatedate ?? null);
+                setSavedContact(contactOf(data));
                 setLoadedState(reviewState(data));
                 setFormData({
                     ...data,
@@ -204,6 +215,7 @@ const SubmissionForm = () => {
                     funding_type: data.funding_type || '',
                     funding_amount: data.funding_amount ?? '',
                     geo_location: normalizeGeoLocation(data.geo_location),
+                    contact_consent: Boolean(data.contact_consent_at),
                 });
             }
         } catch (err) {
@@ -260,10 +272,21 @@ const SubmissionForm = () => {
         setAutosaveReady(true);
     };
 
+    // Giving or changing the contact needs the submitter's confirmation that the
+    // manager agreed (the API checks the same); clearing it, or keeping the
+    // stored one, doesn't.
+    const contact = contactOf(formData);
+    const contactChanged = CONTACT_FIELDS.some((f) => contact[f] && contact[f] !== (savedContact?.[f] ?? ''));
+
     // ── Field change handlers ───────────────────────────────────────────────
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+            // A different contact needs the submitter's confirmation again.
+            ...(CONTACT_FIELDS.includes(name) ? { contact_consent: false } : {}),
+        }));
     };
 
     const handleNestedChange = (e, section) => {
@@ -274,9 +297,15 @@ const SubmissionForm = () => {
         }));
     };
 
-    /** VocabularySelect reports a plain value, not an event — bridge to handleNestedChange. */
-    const handleNestedVocabChange = (name, section) => (value) =>
+    /**
+     * VocabularySelect reports a plain value, not an event — bridge to
+     * handleNestedChange. `clears` are the fields that depend on this one
+     * (a sector's subsector), emptied when it changes.
+     */
+    const handleNestedVocabChange = (name, section, clears = []) => (value) => {
         handleNestedChange({ target: { name, value } }, section);
+        clears.forEach((dependent) => handleNestedChange({ target: { name: dependent, value: '' } }, section));
+    };
 
     // ── Submit ──────────────────────────────────────────────────────────────
     const handleSubmit = (e) => {
@@ -420,7 +449,7 @@ const SubmissionForm = () => {
                         background: 'rgba(245,158,11,0.08)',
                         marginBottom: '1.5rem',
                     }}>
-                        <AlertTriangle size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                        <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
                         <div style={{ flex: 1, minWidth: '14rem', fontSize: '0.9rem' }}>
                             <strong>{conflict.updatedby || 'Someone else'}</strong> saved this project at{' '}
                             {formatWhen(conflict.updatedate)}, after you opened it. Saving now would replace their changes.
@@ -456,8 +485,8 @@ const SubmissionForm = () => {
                         background: 'rgba(239,68,68,0.07)',
                         marginBottom: '1.5rem',
                     }}>
-                        <AlertTriangle size={18} color="#f87171" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-                        <span style={{ color: '#fca5a5', fontSize: '0.9rem' }}>{error}</span>
+                        <AlertTriangle size={18} color="#dc2626" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                        <span role="alert" style={{ color: '#b91c1c', fontSize: '0.9rem' }}>{error}</span>
                     </div>
                 )}
 
@@ -579,8 +608,8 @@ const SubmissionForm = () => {
                                 value={formData.geo_location?.coordinates?.[0] ?? ''}
                                 onChange={(e) => {
                                     const lon = parseFloat(e.target.value);
-                                    const lat = formData.geo_location?.coordinates?.[1] ?? -27.936;
-                                    handleGeoChange('coordinates', [Number.isFinite(lon) ? lon : 0, lat]);
+                                    const lat = formData.geo_location?.coordinates?.[1] ?? null;
+                                    handleGeoChange('coordinates', [Number.isFinite(lon) ? lon : null, lat]);
                                 }}
                             />
                         </Field>
@@ -591,8 +620,8 @@ const SubmissionForm = () => {
                                 value={formData.geo_location?.coordinates?.[1] ?? ''}
                                 onChange={(e) => {
                                     const lat = parseFloat(e.target.value);
-                                    const lon = formData.geo_location?.coordinates?.[0] ?? 30.374;
-                                    handleGeoChange('coordinates', [lon, Number.isFinite(lat) ? lat : 0]);
+                                    const lon = formData.geo_location?.coordinates?.[0] ?? null;
+                                    handleGeoChange('coordinates', [lon, Number.isFinite(lat) ? lat : null]);
                                 }}
                             />
                         </Field>
@@ -676,6 +705,22 @@ const SubmissionForm = () => {
                         <Field label="Contact Number">
                             <TextInput name="project_manager_contact_number" value={formData.project_manager_contact_number} onChange={handleChange} placeholder="e.g. 082 123 4567" />
                         </Field>
+
+                        <div className="col-span-2">
+                            <p className="form-help">
+                                The project manager&apos;s name and organisation are shown with the project. Their email
+                                and phone number are seen only by you and the DFFE reviewers.
+                            </p>
+                            <ConsentCheck
+                                id="contact-consent"
+                                checked={Boolean(formData.contact_consent)}
+                                onChange={(v) => setFormData((prev) => ({ ...prev, contact_consent: v }))}
+                                required={contactChanged}
+                            >
+                                The project manager has agreed that DFFE may hold their contact details to verify this
+                                project and follow up on its progress.
+                            </ConsentCheck>
+                        </div>
 
                         {/* ── Additional Information ────────────────────── */}
                         <SectionHeading title="Additional Information" />
@@ -773,38 +818,53 @@ const SubmissionForm = () => {
                     {/* ── Mitigation Details ─────────────────────────────────── */}
                     {showMitigation && (
                         <div className="mt-8 glass-panel animate-fade-in" style={{ padding: '1.5rem', border: '1px solid rgba(251,191,36,0.2)' }}>
-                            <h3 className="mb-5" style={{ color: '#fbbf24' }}>Mitigation Details</h3>
+                            <h3 className="mb-5" style={{ color: typeTextColor('Mitigation') }}>Mitigation Details</h3>
                             <div className="grid grid-cols-2 gap-6">
 
                                 <Field label="Mitigation Sector" required>
                                     <VocabularySelect required
                                         value={formData.mitigation_data?.sector}
-                                        onChange={handleNestedVocabChange('sector', 'mitigation_data')}
-                                        options={vocab.mitigationSectors || []}
+                                        onChange={handleNestedVocabChange('sector', 'mitigation_data', ['subsector', 'secondary'])}
+                                        options={topLevel(vocab.mitigationSectors)}
                                     />
                                 </Field>
 
                                 <Field label="Subsector">
-                                    <NestedField section="mitigation_data" name="subsector"
-                                        value={formData.mitigation_data?.subsector} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.subsector}
+                                        onChange={handleNestedVocabChange('subsector', 'mitigation_data', ['secondary'])}
+                                        options={childrenOf(vocab.mitigationSectors, formData.mitigation_data?.sector)}
+                                        placeholder={formData.mitigation_data?.sector ? undefined : '-- Select a sector first --'}
+                                        disabled={!formData.mitigation_data?.sector}
+                                    />
                                 </Field>
 
                                 <Field label="Secondary">
-                                    <NestedField section="mitigation_data" name="secondary"
-                                        value={formData.mitigation_data?.secondary} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.secondary}
+                                        onChange={handleNestedVocabChange('secondary', 'mitigation_data')}
+                                        options={childrenOf(vocab.mitigationSectors, formData.mitigation_data?.subsector)}
+                                        placeholder={formData.mitigation_data?.subsector ? undefined : '-- Select a subsector first --'}
+                                        disabled={!formData.mitigation_data?.subsector}
+                                    />
                                 </Field>
 
                                 <Field label="Project Type">
                                     <VocabularySelect
                                         value={formData.mitigation_data?.project_type}
-                                        onChange={handleNestedVocabChange('project_type', 'mitigation_data')}
-                                        options={vocab.mitigationType || []}
+                                        onChange={handleNestedVocabChange('project_type', 'mitigation_data', ['project_subtype'])}
+                                        options={topLevel(vocab.mitigationType)}
                                     />
                                 </Field>
 
                                 <Field label="Project Subtype">
-                                    <NestedField section="mitigation_data" name="project_subtype"
-                                        value={formData.mitigation_data?.project_subtype} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.project_subtype}
+                                        onChange={handleNestedVocabChange('project_subtype', 'mitigation_data')}
+                                        options={childrenOf(vocab.mitigationType, formData.mitigation_data?.project_type)}
+                                        placeholder={formData.mitigation_data?.project_type ? undefined : '-- Select a project type first --'}
+                                        disabled={!formData.mitigation_data?.project_type}
+                                    />
                                 </Field>
 
                                 <Field label="Mitigation Programme">
@@ -819,13 +879,16 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.national_policy}
                                         onChange={handleNestedVocabChange('national_policy', 'mitigation_data')}
-                                        options={vocab.mitigationPolicies || []}
+                                        options={inGroup(vocab.mitigationPolicies, 'National policy')}
                                     />
                                 </Field>
 
                                 <Field label="Provincial / Municipal Policy">
-                                    <NestedField section="mitigation_data" name="provincial_municipal"
-                                        value={formData.mitigation_data?.provincial_municipal} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.provincial_municipal}
+                                        onChange={handleNestedVocabChange('provincial_municipal', 'mitigation_data')}
+                                        options={inGroup(vocab.mitigationPolicies, 'Regional policy')}
+                                    />
                                 </Field>
 
                                 <div className="col-span-2">
@@ -849,7 +912,7 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.environmental_co_benefit}
                                         onChange={handleNestedVocabChange('environmental_co_benefit', 'mitigation_data')}
-                                        options={vocab.coBenefits || []}
+                                        options={childrenOf(vocab.coBenefits, 'Environmental')}
                                     />
                                 </Field>
                                 <Field label="Environmental Co-benefit Description">
@@ -861,7 +924,7 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.social_co_benefit}
                                         onChange={handleNestedVocabChange('social_co_benefit', 'mitigation_data')}
-                                        options={vocab.coBenefits || []}
+                                        options={childrenOf(vocab.coBenefits, 'Social')}
                                     />
                                 </Field>
                                 <Field label="Social Co-benefit Description">
@@ -873,7 +936,7 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.mitigation_data?.economic_co_benefit}
                                         onChange={handleNestedVocabChange('economic_co_benefit', 'mitigation_data')}
-                                        options={vocab.coBenefits || []}
+                                        options={childrenOf(vocab.coBenefits, 'Economic')}
                                     />
                                 </Field>
                                 <Field label="Economic Co-benefit Description">
@@ -912,8 +975,11 @@ const SubmissionForm = () => {
                                 </Field>
 
                                 <Field label="Organization Issuing Credits">
-                                    <NestedField section="mitigation_data" name="organization_issuing_credits"
-                                        value={formData.mitigation_data?.organization_issuing_credits} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.mitigation_data?.organization_issuing_credits}
+                                        onChange={handleNestedVocabChange('organization_issuing_credits', 'mitigation_data')}
+                                        options={vocab.carbonCreditVoluntaryOrganizations || []}
+                                    />
                                 </Field>
                                 <Field label="Voluntary Methodology">
                                     <NestedField section="mitigation_data" name="voluntary_methodology"
@@ -931,7 +997,7 @@ const SubmissionForm = () => {
                     {/* ── Adaptation Details ─────────────────────────────────── */}
                     {showAdaptation && (
                         <div className="mt-8 glass-panel animate-fade-in" style={{ padding: '1.5rem', border: '1px solid rgba(52,211,153,0.2)' }}>
-                            <h3 className="mb-5" style={{ color: '#34d399' }}>Adaptation Details</h3>
+                            <h3 className="mb-5" style={{ color: typeTextColor('Adaptation') }}>Adaptation Details</h3>
                             <div className="grid grid-cols-2 gap-6">
 
                                 <Field label="Adaptation Sector" required>
@@ -954,13 +1020,16 @@ const SubmissionForm = () => {
                                     <VocabularySelect
                                         value={formData.adaptation_data?.national_policy}
                                         onChange={handleNestedVocabChange('national_policy', 'adaptation_data')}
-                                        options={vocab.adaptationPolicies || []}
+                                        options={inGroup(vocab.adaptationPolicies, 'National policy')}
                                     />
                                 </Field>
 
                                 <Field label="Provincial / Municipal Policy">
-                                    <NestedField section="adaptation_data" name="provincial_municipal"
-                                        value={formData.adaptation_data?.provincial_municipal} onChange={handleNestedChange} />
+                                    <VocabularySelect
+                                        value={formData.adaptation_data?.provincial_municipal}
+                                        onChange={handleNestedVocabChange('provincial_municipal', 'adaptation_data')}
+                                        options={inGroup(vocab.adaptationPolicies, 'Regional policy')}
+                                    />
                                 </Field>
 
                                 <div className="col-span-2">

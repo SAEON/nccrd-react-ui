@@ -36,7 +36,10 @@ import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getSubmissions, getFacets, downloadExport, getReportLocations, UPLOAD_TEMPLATE_URL } from '../services/api';
 import { useCurrentUser } from '../context/CurrentUserContext';
+import { useSite } from '../context/SiteContext';
+import { regionPossessive } from '../utils/site';
 import Navbar from '../components/Navbar';
+import HeroCredit from '../components/HeroCredit';
 import InterventionBadge from '../components/InterventionBadge';
 import StatusBadge from '../components/StatusBadge';
 import DownloadProjectButton from '../components/DownloadProjectButton';
@@ -104,6 +107,7 @@ const EMPTY_FILTERS = {
 const Home = () => {
 
     const { hasPermission, isAuthenticated, loading: authLoading } = useCurrentUser();
+    const site = useSite();
     const [searchParams, setSearchParams] = useSearchParams();
     const [downloading, setDownloading] = useState(false);
     const [view, setView] = useState('list');           // 'list' | 'map'
@@ -360,11 +364,11 @@ const Home = () => {
     return (
         <div style={{ width: '100%' }}>
 
-            {/* ── Bulk upload modal ────────────────────────────────────────── */}
+            {/* ── Bulk upload modal: stays open after an upload to say what was created ── */}
             {showUploadModal && (
                 <BulkUploadModal
                     onClose={() => setShowUploadModal(false)}
-                    onSuccess={() => { setShowUploadModal(false); setReloadKey((k) => k + 1); }}
+                    onSuccess={() => setReloadKey((k) => k + 1)}
                 />
             )}
 
@@ -374,14 +378,15 @@ const Home = () => {
             {/* ── Hero Section with Background ───────────────────────────────── */}
             <section
                 className="hero-container"
-                style={{ backgroundImage: 'url("/hero-bg.jpg")' }}
+                style={{ '--hero-image': `url("${site.hero_image.url}")` }}
             >
+                {site.hero_image.credit && <HeroCredit image={site.hero_image} />}
                 <div className="hero-overlay animate-fade-in">
                     <h1 className="hero-title" style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '-0.03em' }}>
-                        National Climate Change Response Database
+                        {site.title}
                     </h1>
-                    <p style={{ fontSize: '1.1rem', color: 'var(--accent-secondary)', fontWeight: 500, maxWidth: '600px', margin: '0 auto' }}>
-                        Tracking South Africa’s climate change adaptation and mitigation projects.
+                    <p style={{ fontSize: '1.1rem', color: 'var(--accent-secondary)', fontWeight: 500, maxWidth: '37.5rem', margin: '0 auto' }}>
+                        Tracking {regionPossessive(site)} climate change adaptation and mitigation projects.
                     </p>
                 </div>
             </section>
@@ -396,7 +401,7 @@ const Home = () => {
                             <FileText size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Data Reports</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>View progress on South Africa&apos;s climate change response.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>View progress on {regionPossessive(site)} climate change response.</p>
                         <Link to="/reports" className="card-btn">
                             VIEW REPORTS
                         </Link>
@@ -408,7 +413,7 @@ const Home = () => {
                             <UploadCloud size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Contribute</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation&apos;s climate change projects to the national database.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Add your organisation&apos;s climate change projects to the {site.is_default ? 'national database' : site.short_title}.</p>
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {hasPermission('create-submission') && (
                                 <Link to="/submission/new" className="card-btn" style={{ background: 'var(--accent-primary)', color: 'white', border: 'none' }}>
@@ -433,7 +438,7 @@ const Home = () => {
                             <Compass size={28} color="var(--accent-primary)" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Search Data</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Explore, filter and download detailed project data across all sectors and regions.</p>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>Explore, filter and download detailed project data across all sectors{site.province ? '' : ' and regions'}.</p>
                         <button
                             className="card-btn"
                             onClick={() => document.getElementById('project-directory')?.scrollIntoView({ behavior: 'smooth' })}
@@ -453,7 +458,7 @@ const Home = () => {
                             <Database size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats.total}</div>
+                            <div className="stat-val">{stats.total.toLocaleString()}</div>
                             <div className="stat-label">Total Projects</div>
                         </div>
                     </div>
@@ -462,7 +467,7 @@ const Home = () => {
                             <Zap size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats.Mitigation || 0}</div>
+                            <div className="stat-val">{(stats.Mitigation || 0).toLocaleString()}</div>
                             <div className="stat-label">Mitigation</div>
                         </div>
                     </div>
@@ -471,7 +476,7 @@ const Home = () => {
                             <Leaf size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats.Adaptation || 0}</div>
+                            <div className="stat-val">{(stats.Adaptation || 0).toLocaleString()}</div>
                             <div className="stat-label">Adaptation</div>
                         </div>
                     </div>
@@ -480,7 +485,7 @@ const Home = () => {
                             <GitMerge size={18} color="var(--accent-primary)" />
                         </div>
                         <div>
-                            <div className="stat-val">{stats['Cross Cutting'] || 0}</div>
+                            <div className="stat-val">{(stats['Cross Cutting'] || 0).toLocaleString()}</div>
                             <div className="stat-label">Cross Cutting</div>
                         </div>
                     </div>
@@ -507,7 +512,7 @@ const Home = () => {
                             style={{
                                 padding: '1.5rem',
                                 position: 'sticky',
-                                top: '100px',
+                                top: '6.25rem',
                                 /*
                                  * Override the .glass-panel:hover lift effect.
                                  * Inline styles have higher specificity than
@@ -517,7 +522,7 @@ const Home = () => {
                                 transform: 'none',
                                 /* Scroll the panel itself when there are many filters
                                    and the viewport is short. */
-                                maxHeight: 'calc(100vh - 120px)',
+                                maxHeight: 'calc(100vh - 7.5rem)',
                                 overflowY: 'auto',
                             }}
                         >
@@ -547,8 +552,8 @@ const Home = () => {
                                             display: 'inline-flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            minWidth: '20px',
-                                            height: '20px',
+                                            minWidth: '1.25rem',
+                                            height: '1.25rem',
                                             borderRadius: '9999px',
                                             background: 'var(--accent-primary)',
                                             color: 'white',
@@ -596,35 +601,6 @@ const Home = () => {
                                     Only my submissions
                                 </label>
                             )}
-
-                            {/* ── Full-text keyword search ─────────────────── */}
-                            <form style={{ marginBottom: '0.5rem' }} onSubmit={handleSearch}>
-                                <label className="input-label" htmlFor="search-keywords">Keywords</label>
-                                <div style={{ position: 'relative' }}>
-                                    <input
-                                        id="search-keywords"
-                                        type="text"
-                                        className="input-field"
-                                        placeholder="Search by title…"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        style={{ paddingRight: '2.5rem' }}
-                                    />
-                                    <button
-                                        type="submit"
-                                        aria-label="Search"
-                                        style={{
-                                            position: 'absolute', right: '5px', top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            background: 'none', border: 'none',
-                                            cursor: 'pointer', color: 'var(--accent-primary)',
-                                            padding: '0.5rem',
-                                        }}
-                                    >
-                                        <Search size={15} />
-                                    </button>
-                                </div>
-                            </form>
 
                             {/* ══════════════════════════════════════════════
                                 ACCORDION GROUP 1: Project Filters
@@ -677,16 +653,19 @@ const Home = () => {
                                  * Options come from /facets/submission. "National" is the legacy
                                  * value for country-wide projects; it is labelled as South Africa
                                  * and listed first, but still sent to the backend as "National".
+                                 * Hidden on a province site, which lists that province only.
                                  */}
-                                <FacetSelect
-                                    id="facet-province"
-                                    label="Province"
-                                    value={filters.province}
-                                    options={facets.province ?? []}
-                                    labels={{ National: 'South Africa (National)' }}
-                                    pinned={['National']}
-                                    onChange={(v) => setFilter('province', v)}
-                                />
+                                {!site.province && (
+                                    <FacetSelect
+                                        id="facet-province"
+                                        label="Province"
+                                        value={filters.province}
+                                        options={facets.province ?? []}
+                                        labels={{ National: 'South Africa (National)' }}
+                                        pinned={['National']}
+                                        onChange={(v) => setFilter('province', v)}
+                                    />
+                                )}
 
                                 {/*
                                  * Estimated Budget (estimated_budget_cost)
@@ -827,12 +806,26 @@ const Home = () => {
                         Results list
                         ══════════════════════════════════════════════════════════ */}
                     <div style={{ flexGrow: 1, minWidth: 0 }}>
+                        {/* Full-text keyword search, above the results it narrows */}
+                        <form className="results-search" role="search" onSubmit={handleSearch}>
+                            <label className="sr-only" htmlFor="search-keywords">Search projects</label>
+                            <Search size={18} className="results-search-icon" aria-hidden="true" />
+                            <input
+                                id="search-keywords"
+                                type="search"
+                                className="input-field"
+                                placeholder="Search projects by title…"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <button type="submit" className="btn btn-primary">Search</button>
+                        </form>
                         <div className="flex justify-between items-center" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                             <div className="flex items-center" style={{ gap: '0.75rem' }}>
                                 <h3 style={{ fontSize: '1.4rem', margin: 0 }}>Results</h3>
                                 {!error && !(loading && submissions.length === 0) && (
                                     <span className="badge badge-success">
-                                        {submissions.length} project{submissions.length !== 1 ? 's' : ''}
+                                        {submissions.length.toLocaleString()} project{submissions.length !== 1 ? 's' : ''}
                                     </span>
                                 )}
                             </div>
@@ -902,7 +895,7 @@ const Home = () => {
                             <div className="glass-panel text-center" style={{ padding: '4rem 2rem' }}>
                                 <Database size={44} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
                                 <h3 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>No projects found</h3>
-                                <p style={{ color: 'var(--text-muted)', maxWidth: '380px', margin: '0 auto 1.5rem' }}>
+                                <p style={{ color: 'var(--text-muted)', maxWidth: '23.75rem', margin: '0 auto 1.5rem' }}>
                                     Try adjusting your search or filters, or add the first project.
                                 </p>
                                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>

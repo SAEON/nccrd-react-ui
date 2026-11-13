@@ -6,7 +6,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { approveRegistration, getRegistrations, getRoles, rejectRegistration } from '../services/api';
+import { approveRegistration, getGrants, getRegistrations, rejectRegistration } from '../services/api';
+import { roleLabel } from '../utils/roles';
 import { useCurrentUser } from '../context/CurrentUserContext';
 
 const STATUSES = [['pending', 'Waiting'], ['approved', 'Approved'], ['rejected', 'Rejected']];
@@ -25,7 +26,8 @@ const AdminRegistrations = () => {
 
     useEffect(() => {
         if (!canReview) return;
-        getRoles().then(setRoles).catch(() => setRoles([]));
+        // Only the roles this admin may give (never more than they have).
+        getGrants().then((g) => setRoles(g.roles)).catch(() => setRoles([]));
     }, [canReview]);
 
     useEffect(() => {
@@ -34,7 +36,7 @@ const AdminRegistrations = () => {
         getRegistrations(status).then(setRequests).catch((err) => setError(err.message));
     }, [canReview, status]);
 
-    const defaultRole = roles.find((r) => r.name === 'user') ?? roles[0];
+    const defaultRole = roles.find((r) => r.name === 'contributor') ?? roles[0];
 
     const decide = async (request, approve) => {
         setBusy(request.id);
@@ -117,7 +119,7 @@ const AdminRegistrations = () => {
                                         onChange={(e) => setRoleFor((m) => ({ ...m, [r.id]: e.target.value }))}
                                         style={{ width: 'auto' }}
                                     >
-                                        {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+                                        {roles.map((role) => <option key={role.id} value={role.id}>{roleLabel(role.name)}</option>)}
                                     </select>
                                     <button type="button" className="btn btn-primary" disabled={busy === r.id || !roles.length} onClick={() => decide(r, true)}>
                                         Approve

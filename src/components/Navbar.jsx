@@ -1,11 +1,22 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useHref, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Search, UserPlus, Activity, FolderOpen, ClipboardCheck, BarChart3, UserCheck } from 'lucide-react';
+import { Home, Users, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
+import { useSite } from '../context/SiteContext';
+import { NATIONAL_SITE } from '../utils/site';
 import { getReviewCounts, getRegistrations } from '../services/api';
+
+const DFFE_LOGO_ALT = 'Department of Forestry, Fisheries and the Environment, Republic of South Africa';
+
+/** If a site's image is missing, show the national one instead of a broken image. */
+const fallBackTo = (src, alt) => (e) => {
+    if (e.currentTarget.getAttribute('src') !== src) Object.assign(e.currentTarget, { src, alt });
+};
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const mySubmissionsHref = useHref('/?mine=1');
+    const site = useSite();
     const { user, hasPermission, isAuthenticated, logout } = useCurrentUser();
     const isReviewer = hasPermission('validate-submission');
     const [awaitingReview, setAwaitingReview] = useState(null);
@@ -33,98 +44,92 @@ const Navbar = () => {
         navigate('/');
     };
 
-    /**
-     * If the project-directory section exists in the DOM we're already on the
-     * Home page — scroll there directly.  Otherwise navigate to "/" first and
-     * wait two animation frames for React to render the page before scrolling.
-     */
     /** Open the project list filtered to the user's own submissions (Home reads `?mine=1`). */
     const handleMySubmissions = (e) => {
         e.preventDefault();
         navigate('/?mine=1');
     };
 
-    const handleSearchData = () => {
-        const el = document.getElementById('project-directory');
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            navigate('/');
-            requestAnimationFrame(() =>
-                requestAnimationFrame(() =>
-                    document.getElementById('project-directory')?.scrollIntoView({ behavior: 'smooth' })
-                )
-            );
-        }
-    };
-
     return (
-        <header className="top-banner">
-            <div className="container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div className="logo-lockup">
-                        <img src="/dffe-logo.jpg" alt="National Coat of Arms" style={{ height: '60px' }} />
-                        <div className="dept-text">
-                            Department: <span>Forestry, Fisheries and the Environment</span> REPUBLIC OF SOUTH AFRICA
-                        </div>
-                    </div>
+        <header className="site-header">
+            {/* Masthead: DFFE (and the province's emblem), the site's name and the flag. */}
+            <div className="container site-masthead">
+                <Link to="/" className="brand" aria-label={`${site.short_title} home`}>
+                    <img src="/dffe-logo.jpg" className="brand-logo" alt={DFFE_LOGO_ALT} />
+                    {/* DFFE runs every site; a province site adds its own emblem. */}
+                    {site.logo_url && (
+                        <img
+                            src={site.logo_url}
+                            className="brand-emblem"
+                            alt={site.province ? `Coat of arms of ${site.province}` : `${site.title} emblem`}
+                            onError={(e) => { e.currentTarget.hidden = true; }}
+                        />
+                    )}
+                </Link>
+                <Link to="/" className="site-title">{site.title}</Link>
+                <div className="site-masthead-end">
+                    <img
+                        src={site.flag_url}
+                        alt={site.flag_url === NATIONAL_SITE.flag_url ? 'South African flag' : `${site.province} flag`}
+                        className="site-flag"
+                        onError={fallBackTo(NATIONAL_SITE.flag_url, 'South African flag')}
+                    />
                 </div>
+            </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem 2rem' }}>
-                    <nav className="nav-links">
-                        <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); handleSearchData(); }}>
-                            <Search size={14} /> SEARCH DATA
-                        </a>
-                        <Link to="/reports" className="nav-link">
-                            <BarChart3 size={14} /> DATA REPORTS
+            {/* A slim bar in the site's colour with the pages and the account. */}
+            <div className="site-navbar">
+                <div className="container site-navbar-inner">
+                    <nav className="site-nav" aria-label="Main">
+                        <Link to="/" className="site-nav-link">
+                            <Home size={15} aria-hidden="true" /> Home
+                        </Link>
+                        <Link to="/reports" className="site-nav-link">
+                            <BarChart3 size={15} aria-hidden="true" /> Data Reports
                         </Link>
                         {isAuthenticated && (
-                            <a href="/?mine=1" className="nav-link" onClick={handleMySubmissions}>
-                                <FolderOpen size={14} /> MY SUBMISSIONS
+                            <a href={mySubmissionsHref} className="site-nav-link" onClick={handleMySubmissions}>
+                                <FolderOpen size={15} aria-hidden="true" /> My Submissions
                             </a>
                         )}
                         {hasPermission('create-submission') && (
-                            <Link to="/submission/new" className="nav-link">
-                                <Activity size={14} /> NEW SUBMISSION
+                            <Link to="/submission/new" className="site-nav-link">
+                                <FilePlus size={15} aria-hidden="true" /> New Submission
                             </Link>
                         )}
                         {isReviewer && (
-                            <Link to="/review" className="nav-link">
-                                <ClipboardCheck size={14} /> REVIEW
+                            <Link to="/review" className="site-nav-link">
+                                <ClipboardCheck size={15} aria-hidden="true" /> Review
                                 {awaitingReview > 0 && <span className="nav-count" aria-label={`${awaitingReview} waiting`}>{awaitingReview}</span>}
                             </Link>
                         )}
                         {isAdmin && (
-                            <Link to="/admin/registrations" className="nav-link">
-                                <UserCheck size={14} /> REQUESTS
+                            <Link to="/admin/registrations" className="site-nav-link">
+                                <UserCheck size={15} aria-hidden="true" /> Requests
                                 {pendingRequests > 0 && <span className="nav-count" aria-label={`${pendingRequests} waiting`}>{pendingRequests}</span>}
                             </Link>
                         )}
-                        {hasPermission('assign-role') && (
-                            <Link to="/admin/users/new" className="nav-link">
-                                <UserPlus size={14} /> ADD USER
+                        {isAdmin && (
+                            <Link to="/admin/users" className="site-nav-link">
+                                <Users size={15} aria-hidden="true" /> People
                             </Link>
                         )}
                     </nav>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-light)', paddingLeft: '1.5rem' }}>
-                        <img src="/flag.svg" alt="South African Flag" style={{ height: '24px', borderRadius: '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                    <div className="site-account">
                         {isAuthenticated ? (
                             <>
-                                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                                    Signed in as <strong>{user.name}</strong>
+                                <span className="site-signed-in">
+                                    <CircleUser size={15} aria-hidden="true" />
+                                    <span className="sr-only">Signed in as </span>
+                                    <strong>{user.name}</strong>
                                 </span>
-                                <button
-                                    className="btn btn-outline"
-                                    onClick={handleLogout}
-                                    style={{ fontSize: '0.75rem', gap: '0.4rem' }}
-                                >
-                                    LOG OUT
+                                <button type="button" className="site-account-btn" onClick={handleLogout}>
+                                    Log out <LogOut size={14} aria-hidden="true" />
                                 </button>
                             </>
                         ) : (
-                            <Link to="/login" className="btn btn-outline" style={{ fontSize: '0.75rem', gap: '0.4rem' }}>
-                                LOG IN
+                            <Link to="/login" className="site-account-btn">
+                                Log in <LogIn size={14} aria-hidden="true" />
                             </Link>
                         )}
                     </div>

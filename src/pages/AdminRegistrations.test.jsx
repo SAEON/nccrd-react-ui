@@ -11,16 +11,19 @@ vi.mock('../services/api', () => ({
     getRegistrations: vi.fn().mockResolvedValue([
         { id: 9, name: 'Thandi M', email: 't@example.org', organisation: 'City of Joburg', registration_note: 'Capturing projects', created_at: '2026-10-02T09:00:00' },
     ]),
-    getRoles: vi.fn().mockResolvedValue([{ id: 1, name: 'admin' }, { id: 5, name: 'user' }]),
+    // Only the roles this admin may give, as the server lists them.
+    getGrants: vi.fn().mockResolvedValue({ sites: [{ id: 2, name: 'MCCRD', is_default: false }],
+        roles: [{ id: 1, name: 'site-admin' }, { id: 5, name: 'contributor' }, { id: 6, name: 'reviewer' }] }),
     approveRegistration: vi.fn().mockResolvedValue({}),
     rejectRegistration: vi.fn().mockResolvedValue({}),
 }));
 
 describe('AdminRegistrations', () => {
-    it('approves with the "user" role by default and removes the request', async () => {
+    it('approves as a contributor by default and removes the request', async () => {
         render(<MemoryRouter><AdminRegistrations /></MemoryRouter>);
         expect(await screen.findByText('Capturing projects')).toBeInTheDocument();
         await waitFor(() => expect(screen.getByLabelText('Role')).toHaveValue('5'));
+        expect(screen.getByRole('option', { name: 'Site admin' })).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
         await waitFor(() => expect(approveRegistration).toHaveBeenCalledWith(9, 5));
