@@ -96,9 +96,10 @@ const PrivacyNotice = ({ site }) => (
         <h3>Who sees it</h3>
         <p>
             A project manager&apos;s name and organisation are published with the project. Their email address and
-            phone number are seen only by the person who submitted the project and DFFE&apos;s reviewers, and are left
-            out of downloads. Account details are seen only by the website&apos;s administrators. We do not sell
-            personal information or share it outside government, except where the law requires it.
+            phone number are seen only by the person who submitted the project and by the database&apos;s reviewers,
+            including those of the province the project is in, and are left out of downloads. Account details are
+            seen only by the database&apos;s administrators, including the administrators of the province sites. We do
+            not sell personal information or share it outside government, except where the law requires it.
         </p>
         <h3>Is it required?</h3>
         <p>
