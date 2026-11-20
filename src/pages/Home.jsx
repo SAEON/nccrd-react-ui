@@ -946,7 +946,7 @@ const Home = () => {
                                                 <InterventionBadge type={sub.intervention_measurement} />
                                             </div>
                                             <Link to={`/submission/${sub.id}`} style={{ textDecoration: 'none' }}>
-                                                <h3 style={{ margin: '0 0 0.4rem', color: 'var(--text-primary)' }}>
+                                                <h3 className="project-title project-card-title" title={sub.title || undefined}>
                                                     {sub.title || `Project ${sub.id}`}
                                                 </h3>
                                             </Link>

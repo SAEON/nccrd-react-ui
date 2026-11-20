@@ -226,7 +226,7 @@ const SubmissionDetails = () => {
                             )}
                         </div>
                     </div>
-                    <h1 className="pd-title">{project.title || 'Untitled project'}</h1>
+                    <h1 className="pd-title project-title">{project.title || 'Untitled project'}</h1>
                     <p className="pd-description">
                         {project.description || 'No description has been recorded for this project.'}
                     </p>

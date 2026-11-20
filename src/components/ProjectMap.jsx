@@ -42,7 +42,7 @@ const ProjectMap = ({ projects = [], withoutLocation = 0, height = 440 }) => {
                         >
                             <Tooltip direction="top" offset={[0, -4]}>{p.title || 'Untitled project'}</Tooltip>
                             <Popup>
-                                <strong>{p.title || 'Untitled project'}</strong>
+                                <strong className="project-title">{p.title || 'Untitled project'}</strong>
                                 <br />
                                 {p.type}
                                 <br />
