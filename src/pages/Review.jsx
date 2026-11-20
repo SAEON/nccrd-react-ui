@@ -109,7 +109,7 @@ const Review = () => {
                                         <StatusBadge submission={s} />
                                         <InterventionBadge type={s.intervention_measurement} />
                                     </span>
-                                    <strong>{s.title || 'Untitled project'}</strong>
+                                    <strong className="project-title">{s.title || 'Untitled project'}</strong>
                                     <span className="review-row-meta">
                                         {[s.implementation_organization, sourceLabel(s.data_source), s.createdate && `added ${formatDate(s.createdate)}`]
                                             .filter(Boolean).join(' · ')}

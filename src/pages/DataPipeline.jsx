@@ -61,7 +61,7 @@ const Worklist = ({ issue }) => {
                         <li key={p.id}>
                             <Link to={`/submission/${p.id}`} className="glass-panel review-row">
                                 <span className="review-row-main">
-                                    <strong>{p.title || 'Untitled project'}</strong>
+                                    <strong className="project-title">{p.title || 'Untitled project'}</strong>
                                     <span className="review-row-meta">
                                         {[p.implementation_organization, p.public ? 'public' : 'not public', p.value && `found: ${p.value}`].filter(Boolean).join(' · ')}
                                     </span>
