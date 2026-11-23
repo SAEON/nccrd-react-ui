@@ -243,6 +243,18 @@ const Home = () => {
         requestAnimationFrame(() => document.getElementById('project-directory')?.scrollIntoView?.({ behavior: 'smooth' }));
     }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // "Search" in the header links here as /?search=1, from any page: tidy the
+    // URL, bring the project directory into view and put the cursor in the
+    // search box.
+    useEffect(() => {
+        if (searchParams.get('search') !== '1') return;
+        setSearchParams({}, { replace: true });
+        requestAnimationFrame(() => {
+            document.getElementById('project-directory')?.scrollIntoView?.({ behavior: 'smooth' });
+            document.getElementById('search-keywords')?.focus({ preventScroll: true });
+        });
+    }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // The filter needs a login; drop it if the user logs out.
     useEffect(() => {
         if (!authLoading && !isAuthenticated) setFilters((prev) => (prev.mine ? { ...prev, mine: false } : prev));

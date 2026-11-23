@@ -1,6 +1,6 @@
 import { Link, useHref, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Home, Users, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
+import { Home, Search, Users, FilePlus, FolderOpen, ClipboardCheck, BarChart3, UserCheck, LogIn, LogOut, CircleUser } from 'lucide-react';
 import { useCurrentUser } from '../context/CurrentUserContext';
 import { useSite } from '../context/SiteContext';
 import { NATIONAL_SITE } from '../utils/site';
@@ -83,6 +83,10 @@ const Navbar = () => {
                     <nav className="site-nav" aria-label="Main">
                         <Link to="/" className="site-nav-link">
                             <Home size={15} aria-hidden="true" /> Home
+                        </Link>
+                        {/* Search lives in the home page's project directory; Home reads `?search=1`. */}
+                        <Link to="/?search=1" className="site-nav-link">
+                            <Search size={15} aria-hidden="true" /> Search
                         </Link>
                         <Link to="/reports" className="site-nav-link">
                             <BarChart3 size={15} aria-hidden="true" /> Data Reports
