@@ -102,4 +102,10 @@ describe('Home filtering', () => {
         await waitFor(() => expect(getSubmissions).toHaveBeenLastCalledWith({ mine: 'true' }, expect.anything()));
         expect(screen.getByLabelText('Only my submissions')).toBeChecked();
     });
+
+    it('puts the cursor in the search box from the header link (/?search=1)', async () => {
+        getSubmissions.mockResolvedValue([]);
+        render(<MemoryRouter initialEntries={['/?search=1']}><Home /></MemoryRouter>);
+        await waitFor(() => expect(screen.getByLabelText('Search projects')).toHaveFocus());
+    });
 });
