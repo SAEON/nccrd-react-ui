@@ -47,7 +47,8 @@ const DailyColumns = ({ days, valueKey, noun, weekly = false }) => {
             <div className="chart-scroll">
                 <svg
                     viewBox={`0 0 ${width} ${HEIGHT}`}
-                    style={{ width: '100%', minWidth: `${Math.min(width, 560)}px`, height: 'auto', display: 'block' }}
+                    // As in StackedColumns: stretch at most a quarter past the drawn size.
+                    style={{ width: '100%', minWidth: `${Math.min(width, 560)}px`, maxWidth: `${Math.round(width * 1.25)}px`, height: 'auto', display: 'block', margin: '0 auto' }}
                     role="img"
                     aria-label={`${noun[0].toUpperCase()}${noun.slice(1)}s per ${weekly ? 'week' : 'day'}, ${total.toLocaleString()} in all. Busiest: ${describe(peak)}.`}
                 >

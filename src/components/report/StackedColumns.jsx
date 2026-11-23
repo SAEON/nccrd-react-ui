@@ -50,7 +50,9 @@ const StackedColumns = ({ data, emptyText = 'No dates recorded for this selectio
             <div className="chart-scroll">
                 <svg
                     viewBox={`0 0 ${width} ${HEIGHT}`}
-                    style={{ width: '100%', minWidth: `${Math.min(width, 560)}px`, height: 'auto', display: 'block' }}
+                    // Fill the panel, but stretch at most a quarter past the drawn size: on
+                    // a wide screen a bigger stretch blows the labels up.
+                    style={{ width: '100%', minWidth: `${Math.min(width, 560)}px`, maxWidth: `${Math.round(width * 1.25)}px`, height: 'auto', display: 'block', margin: '0 auto' }}
                     role="img"
                     aria-label={`Projects under way per year, ${first} to ${last}. Peak: ${peak.total} in ${peak.year}.`}
                 >
